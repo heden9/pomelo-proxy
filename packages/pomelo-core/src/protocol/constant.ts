@@ -1,0 +1,3 @@
+export const ERRORS = {
+  PROTOCOL_DECODE_ERROR: "PROTOCOL_DECODE_ERROR",
+};

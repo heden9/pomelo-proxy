@@ -1,0 +1,17 @@
+{
+  "name": "pomelo-proxy",
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/w771854332/pomelo-proxy.git"
+  },
+  "keywords": [
+    "socks5",
+    "proxy"
+  ],
+  "author": "禾登 <771854332@qq.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "lerna": "^3.13.1"
+  }
+}

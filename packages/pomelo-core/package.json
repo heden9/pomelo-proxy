@@ -1,0 +1,24 @@
+{
+  "name": "pomelo-core",
+  "version": "1.0.0",
+  "description": "",
+  "main": "build/index.js",
+  "scripts": {
+    "dev": "tsc -w",
+    "lint": "tslint ./src/* --fix",
+    "build": "tsc -d"
+  },
+  "author": "禾登 <771854332@qq.com>",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/ip": "^1.1.0",
+    "@types/node": "^11.11.3",
+    "tslint": "^5.14.0",
+    "typescript": "^3.3.3333"
+  },
+  "dependencies": {
+    "debug": "^4.1.1",
+    "ip": "^1.1.5",
+    "smart-buffer": "^4.0.2"
+  }
+}

@@ -1,0 +1,11 @@
+@startuml
+== 握手阶段 ==
+socks_client -> socks_server: sendSocks5InitialHandshake
+
+
+== 建立链接 ==
+
+socks_client -> socks_server: handleInitialSocks5HandshakeResponse
+
+== 传输阶段 ==
+@enduml
