@@ -5,3 +5,5 @@ export class ProtocolError extends Error {
     super(message);
   }
 }
+
+export function noop() {}

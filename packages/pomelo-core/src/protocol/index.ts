@@ -1,10 +1,10 @@
-import { ProtocolDecoder } from "./decoder";
-import { ProtocolEncoder } from "./encoder";
+import { IProtocolDecoderOptions, ProtocolDecoder } from "./decoder";
+import { IProtocolEncoderOptions, ProtocolEncoder } from "./encoder";
 
-export function encoder(options: any) {
-  return new ProtocolEncoder({ ...options });
+export function encoder(options?: IProtocolEncoderOptions) {
+  return new ProtocolEncoder(options);
 }
 
-export function decoder(options: any) {
-  return new ProtocolDecoder({ ...options });
+export function decoder(options: IProtocolDecoderOptions) {
+  return new ProtocolDecoder(options);
 }

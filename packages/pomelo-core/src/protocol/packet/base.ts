@@ -4,25 +4,40 @@ import {
   EPacketModelType,
   ERRORS,
   ESocksModel,
+  IPacketMeta,
   IPacketModel,
   ISocksBaseOptions,
+  TBufferVal,
+  TBufferValBase,
 } from "./type";
 
-const debug = require("debug")("socks-ts-protocol:base");
+const debug = require("debug")("pomelo-core:packet");
 
-export interface ISocksPacketBase {
+export interface ISocksPacket {
   toBuffer(): Buffer;
   toJSON(): Record<string, any>;
+  packetLength(): number;
+  setMeta(meta: IPacketMeta): void;
+}
+export interface ISocksPacketClass {
+  displayName: string;
+  new (optionsOrBuffer: Buffer | any): ISocksPacket;
 }
 
-export class SocksPacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> implements ISocksPacketBase {
-  public get models(): IPacketModel<ISocksBaseOptions>[] {
-    return (this.constructor as typeof SocksPacketBase).models;
+type TBufferReader = (offset?: number) => number;
+type TBufferWriter = (value: number, offset?: number) => SmartBuffer;
+
+export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> {
+  public get models(): IPacketModel<T>[] {
+    return (this.constructor as typeof SocksV5PacketBase).models;
   }
+
   public static models: IPacketModel<any>[] = [
     createModel(ESocksModel.version),
   ];
 
+  public static headLength = 0;
+  public meta: Partial<IPacketMeta> = {};
   protected _options: T | null = null;
   protected _buffer: Buffer | null = null;
   constructor(optionsOrBuffer: T | Buffer) {
@@ -31,6 +46,10 @@ export class SocksPacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> im
     } else {
       this._options = optionsOrBuffer;
     }
+  }
+
+  public setMeta(meta: IPacketMeta) {
+    this.meta = meta;
   }
 
   public toBuffer() {
@@ -48,7 +67,7 @@ export class SocksPacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> im
       debug("toBuffer process loop, model: %o", model);
       const options = this._options as T;
       const value = options[model.key];
-      const [writeBuff] = this._getBufferMethod(buffer, model.type);
+      const [writeBuff] = this._selectBufferMethod(buffer, model.type);
       if (typeof model.write === "function") {
         model.write(buffer, options);
         return;
@@ -110,19 +129,20 @@ export class SocksPacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> im
     const sizeMap: Map<keyof T, number> = new Map();
     this.models.forEach((model) => {
       debug("toJSON process loop, model: %o", model);
-      const [_, readBuffer] = this._getBufferMethod(buffer, model.type);
+      const [_, readBuffer] = this._selectBufferMethod(buffer, model.type);
 
       if (typeof model.read === "function") {
-        model.read(buffer, obj);
+        model.read(buffer, obj, model, this._validateBufferVal);
         return;
       }
 
       // 尝试读取元素的size
       const size = sizeMap.get(model.key);
-      const val = size
+      const val: TBufferVal = size
         ? this._readBufferBatch(readBuffer, size)
         : readBuffer();
-
+      // 校验
+      this._validateBufferVal(val, model);
       // 如果使用了for，则记为指定元素的长度
       if (model.for) {
         sizeMap.set(model.for, val as number);
@@ -135,18 +155,44 @@ export class SocksPacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> im
     return obj as T;
   }
 
-  private _readBufferBatch(readBuffer: SmartBuffer["readUInt8"], count: number): number[] {
+  private _validateBufferVal(value: TBufferVal | undefined, model: IPacketModel<T>) {
+    if (value == null || (model.isArray && !Array.isArray(value))) {
+      throw new ProtocolError(
+        ERRORS.PACKET_VALIDATE_ERROR
+        + ", expect val's type to be number[] or string[] or string or number, but got " + typeof value,
+      );
+    }
+
+    if (model.check) {
+      const validValSet: TBufferValBase[] = Object.values(model.check);
+      const validVal = Array.isArray(value)
+        ? value.every((val: string | number) => validValSet.indexOf(val) !== -1)
+        : validValSet.indexOf(value) !== -1;
+
+      if (!validVal) {
+        throw new ProtocolError(
+          ERRORS.PACKET_VALIDATE_ERROR +
+          `, invalid ${model.key}, expect ${model.key} in [${validValSet}], but got ${value}`,
+        );
+      }
+    }
+  }
+
+  private _readBufferBatch(readBuffer: TBufferReader, count: number): number[] {
     const array: number[] = [];
     for (let index = 0; index < count; index++) {
-      array.push(readBuffer());
+      const val = readBuffer();
+      if (val) {
+        array.push();
+      }
     }
     return array;
   }
 
-  private _getBufferMethod(
+  private _selectBufferMethod(
     buff: SmartBuffer,
     type?: EPacketModelType,
-  ): [SmartBuffer["writeUInt8"], SmartBuffer["readUInt8"]] {
+  ): [TBufferWriter, TBufferReader] {
     let write;
     let read;
     switch (type) {

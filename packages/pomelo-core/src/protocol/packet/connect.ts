@@ -1,9 +1,11 @@
 import * as ip from "ip";
 import * as net from "net";
-import { SocksPacketBase } from "./base";
+import { SocksV5PacketBase } from "./base";
 import { createModel } from "./helper";
 import {
   EPacketModelType,
+  EPacketType,
+  ESocksAddressLength,
   ESocksAddressType,
   ESocksCommand,
   ESocksModel,
@@ -32,23 +34,33 @@ export type TSocksConnectResponseOptions = Omit<TSocksConnectBaseOptions, "comma
 };
 
 /**
- * socks连接请求基础包
+ * socks连接基础包
  *
  * @export
  * @class SocksConnectBase
- * @extends {SocksPacketBase<ISocksConnectBaseModel>}
+ * @extends {SocksV5PacketBase<ISocksConnectBaseModel>}
  */
-class SocksConnectBase extends SocksPacketBase<ISocksConnectBaseModel> {
+class SocksConnectBase extends SocksV5PacketBase<ISocksConnectBaseModel> {
+
   public static models = [
-    ...SocksPacketBase.models,
+    ...SocksV5PacketBase.models,
     createModel<ISocksConnectBaseModel>(
       ESocksModel.command,
+      {
+        check: ESocksCommand,
+      },
     ),
     createModel<ISocksConnectBaseModel>(
       ESocksModel.reserved,
+      {
+        check: [0],
+      },
     ),
     createModel<ISocksConnectBaseModel>(
       ESocksModel.addressType,
+      {
+        check: ESocksAddressType,
+      },
     ),
     createModel<ISocksConnectBaseModel>(
       ESocksModel.address,
@@ -67,19 +79,22 @@ class SocksConnectBase extends SocksPacketBase<ISocksConnectBaseModel> {
               break;
           }
         },
-        read(buffer, obj) {
+        read(buffer, obj, model, validate) {
+          let val;
           switch (obj.addressType) {
             case ESocksAddressType.IPv4:
-              obj[ESocksModel.address] = ip.fromLong(buffer.readUInt32BE());
+              val = ip.fromLong(buffer.readUInt32BE());
               break;
             case ESocksAddressType.IPv6:
-              obj[ESocksModel.address] = ip.toString(buffer.readBuffer(16));
+              val = ip.toString(buffer.readBuffer(16));
               break;
             case ESocksAddressType.domain:
               const domainLength = buffer.readUInt8();
-              obj[ESocksModel.address] = buffer.readString(domainLength);
+              val = buffer.readString(domainLength);
               break;
           }
+          validate(val, model);
+          obj[ESocksModel.address] = val;
         },
       },
     ),
@@ -106,6 +121,31 @@ class SocksConnectBase extends SocksPacketBase<ISocksConnectBaseModel> {
       });
     }
   }
+
+  public packetLength() {
+    if (this._buffer === null || this._buffer.length < 4) {
+      return 0;
+    }
+    let length = 4;
+    switch (this._buffer[3]) {
+      case ESocksAddressType.IPv4:
+        length += ESocksAddressLength.IPv4;
+        break;
+      case ESocksAddressType.IPv6:
+        length += ESocksAddressLength.IPv6;
+        break;
+      case ESocksAddressType.domain:
+        if (this._buffer.length < 5) {
+          return 0;
+        } else {
+          length += 1 + this._buffer[4];
+        }
+        break;
+      default:
+        return 0;
+    }
+    return length + 2;
+  }
 }
 
 /**
@@ -116,6 +156,10 @@ class SocksConnectBase extends SocksPacketBase<ISocksConnectBaseModel> {
  * @extends {SocksConnectBase<ISocksConnectRequestOptions>}
  */
 export class SocksConnectRequest extends SocksConnectBase {
+  public static get displayName() {
+    return EPacketType.CONNECT_REQUEST;
+  }
+
   constructor(optionsOrBuffer: TSocksConnectRequestOptions | Buffer) {
     super(optionsOrBuffer);
   }
@@ -129,6 +173,10 @@ export class SocksConnectRequest extends SocksConnectBase {
  * @extends {SocksConnectBase<ISocksConnectBaseModel>}
  */
 export class SocksConnectResponse extends SocksConnectBase {
+  public static get displayName() {
+    return EPacketType.CONNECT_RESPONSE;
+  }
+
   constructor(optionsOrBuffer: TSocksConnectResponseOptions | Buffer) {
     if (optionsOrBuffer instanceof Buffer) {
       super(optionsOrBuffer);
@@ -145,21 +193,3 @@ export class SocksConnectResponse extends SocksConnectBase {
   }
 }
 
-const request = new SocksConnectRequest({
-  address: "FF01::1101",
-  command: ESocksCommand.connect,
-  port: 90,
-  version: ESocksVersion.v5,
-});
-const response = new SocksConnectResponse({
-  address: "FF01::1101",
-  port: 90,
-  reply: ESocksReply.SUCCEEDED,
-  version: ESocksVersion.v5,
-});
-const buff1 = request.toBuffer();
-const req = new SocksConnectRequest(buff1);
-req.toJSON();
-const buff2 = response.toBuffer();
-const res = new SocksConnectResponse(buff2);
-const a = res.toJSON();
