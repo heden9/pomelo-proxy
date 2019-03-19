@@ -13,5 +13,11 @@
   "license": "MIT",
   "devDependencies": {
     "lerna": "^3.13.1"
-  }
+  },
+  "scripts": {
+    "cov": "lerna run cov",
+    "test": "lerna run test",
+    "postinstall": "lerna bootstrap"
+  },
+  "__npminstall_done": false
 }
