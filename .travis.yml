@@ -5,7 +5,7 @@ node_js:
   - 9
   - 8
 install:
-  - npm install
+  - cnpm
 script:
   - npm run cov
 after_success:
