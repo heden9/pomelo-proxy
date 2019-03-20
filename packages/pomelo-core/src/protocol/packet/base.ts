@@ -4,11 +4,13 @@ import {
   EPacketModelType,
   ERRORS,
   ESocksModel,
+  ESocksVersion,
   IPacketMeta,
   IPacketModel,
   ISocksBaseOptions,
   TBufferVal,
   TBufferValBase,
+  TValidate,
 } from "./type";
 
 const debug = require("debug")("pomelo-core:packet");
@@ -28,18 +30,21 @@ type TBufferReader = (offset?: number) => number;
 type TBufferWriter = (value: number, offset?: number) => SmartBuffer;
 
 export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> {
+
   public get models(): IPacketModel<T>[] {
     return (this.constructor as typeof SocksV5PacketBase).models;
   }
-
   public static models: IPacketModel<any>[] = [
-    createModel(ESocksModel.version),
+    createModel(ESocksModel.version, {
+      check: ESocksVersion,
+    }),
   ];
 
   public static headLength = 0;
   public meta: Partial<IPacketMeta> = {};
   protected _options: T | null = null;
   protected _buffer: Buffer | null = null;
+  private _isValidated: boolean = false;
   constructor(optionsOrBuffer: T | Buffer) {
     if (optionsOrBuffer instanceof Buffer) {
       this._buffer = optionsOrBuffer;
@@ -129,10 +134,16 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
     const sizeMap: Map<keyof T, number> = new Map();
     this.models.forEach((model) => {
       debug("toJSON process loop, model: %o", model);
+      this._isValidated = false;
       const [_, readBuffer] = this._selectBufferMethod(buffer, model.type);
 
       if (typeof model.read === "function") {
-        model.read(buffer, obj, model, this._validateBufferVal);
+
+        const validate: TValidate<T> = (v1, v2) => {
+          this._validateBufferVal(v1, v2, true);
+        };
+        model.read(buffer, obj, model, validate);
+        this._checkValidateCalled();
         return;
       }
 
@@ -142,7 +153,7 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
         ? this._readBufferBatch(readBuffer, size)
         : readBuffer();
       // 校验
-      this._validateBufferVal(val, model);
+      this._validateBufferVal(val, model, !!model.for);
       // 如果使用了for，则记为指定元素的长度
       if (model.for) {
         sizeMap.set(model.for, val as number);
@@ -155,8 +166,8 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
     return obj as T;
   }
 
-  private _validateBufferVal(value: TBufferVal | undefined, model: IPacketModel<T>) {
-    if (value == null || (model.isArray && !Array.isArray(value))) {
+  private _validateBufferVal = (value: TBufferVal | undefined, model: IPacketModel<T>, forceCheck: boolean) => {
+    if (value === null || value === undefined || (model.isArray && !Array.isArray(value))) {
       throw new ProtocolError(
         ERRORS.PACKET_VALIDATE_ERROR
         + ", expect val's type to be number[] or string[] or string or number, but got " + typeof value,
@@ -164,6 +175,7 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
     }
 
     if (model.check) {
+      // TODO: check支持函数
       const validValSet: TBufferValBase[] = Object.values(model.check);
       const validVal = Array.isArray(value)
         ? value.every((val: string | number) => validValSet.indexOf(val) !== -1)
@@ -175,17 +187,27 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
           `, invalid ${model.key}, expect ${model.key} in [${validValSet}], but got ${value}`,
         );
       }
+    } else if (!(forceCheck || model.forceCheck)) {
+      console.warn(`[SocksV5PacketBase] %s's field \`%s\`'s value is %o, expect to set \`check\` attribute `, this.constructor.name, model.key, value);
+    }
+    this._isValidated = true;
+  }
+
+  private _checkValidateCalled() {
+    if (!this._isValidated) {
+      console.warn(`[SocksV5PacketBase] except \`validate\` to be called in %s's \`read\``, this.constructor.name);
     }
   }
 
   private _readBufferBatch(readBuffer: TBufferReader, count: number): number[] {
+    debug("_readBufferBatch, start, count: %s", count);
     const array: number[] = [];
     for (let index = 0; index < count; index++) {
       const val = readBuffer();
-      if (val) {
-        array.push();
-      }
+      debug("_readBufferBatch, process loop, val: %s", val);
+      array.push(val);
     }
+    debug("_readBufferBatch, end, result: %o", array);
     return array;
   }
 

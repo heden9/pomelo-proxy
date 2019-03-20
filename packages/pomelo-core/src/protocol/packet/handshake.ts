@@ -4,7 +4,6 @@ import {
   EPacketType,
   ESocksMethods,
   ESocksModel,
-  ESocksVersion,
   ISocksBaseOptions,
 } from "./type";
 
@@ -28,6 +27,7 @@ export class SocksHandshakeRequest extends SocksV5PacketBase<ISocksHandshakeRequ
     createModel<ISocksHandshakeRequestModel>(
       ESocksModel.methods,
       {
+        check: ESocksMethods,
         isArray: true,
       },
     ),
@@ -54,7 +54,12 @@ export class SocksHandshakeResponse extends SocksV5PacketBase<
 > {
   public static models = [
     ...SocksV5PacketBase.models,
-    createModel<ISocksHandshakeResponseOptions>(ESocksModel.method),
+    createModel<ISocksHandshakeResponseOptions>(
+      ESocksModel.method,
+      {
+        check: ESocksMethods,
+      },
+    ),
   ];
 
   static get displayName() {
@@ -68,11 +73,3 @@ export class SocksHandshakeResponse extends SocksV5PacketBase<
     return 2;
   }
 }
-
-// const request = new SocksHandshakeRequest({
-//   methods: [ESocksMethods.USER_PASS, ESocksMethods.NO_AUTH],
-//   version: ESocksVersion.v5,
-// });
-// const buff = request.toBuffer();
-// const request2 = new SocksHandshakeRequest(buff);
-// request2.toJSON();

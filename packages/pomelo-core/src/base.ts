@@ -1,5 +1,5 @@
-import { EventEmitter } from "events";
+import SDKBase from "sdk-base";
 
-export class SocksBase extends EventEmitter {
+export class SocksBase extends SDKBase {
 
 }

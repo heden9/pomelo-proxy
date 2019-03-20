@@ -10,7 +10,6 @@ import {
   ESocksCommand,
   ESocksModel,
   ESocksReply,
-  ESocksVersion,
   ISocksBaseOptions,
   Omit,
 } from "./type";
@@ -101,6 +100,9 @@ class SocksConnectBase extends SocksV5PacketBase<ISocksConnectBaseModel> {
     createModel<ISocksConnectBaseModel>(
       ESocksModel.port,
       EPacketModelType.int16,
+      {
+        forceCheck: true,
+      },
     ),
   ];
 

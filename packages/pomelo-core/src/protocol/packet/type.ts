@@ -6,6 +6,7 @@ export enum ERRORS {
   PACKET_TO_BUFFER_ERROR = "PACKET_TO_BUFFER_ERROR",
   PACKET_TO_JSON_ERROR = "PACKET_TO_JSON_ERROR",
   PACKET_VALIDATE_ERROR = "PACKET_VALIDATE_ERROR",
+  PACKET_READ_BUFFER_BATCH_ERROR = "PACKET_READ_BUFFER_BATCH_ERROR",
 }
 
 export enum ESocksModel {
@@ -88,6 +89,7 @@ export type TPacketModelRead<T> = (
 
 export interface IPacketModel<T> {
   for?: keyof T;
+  forceCheck?: boolean;
   read?: TPacketModelRead<T>;
   write?: TPacketModelWrite<T>;
   isArray?: boolean;
