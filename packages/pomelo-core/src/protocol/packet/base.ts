@@ -11,20 +11,10 @@ import {
   TBufferVal,
   TBufferValBase,
   TValidate,
+  WithBuffer,
 } from "./type";
 
 const debug = require("debug")("pomelo-core:packet");
-
-export interface ISocksPacket {
-  toBuffer(): Buffer;
-  toJSON(): Record<string, any>;
-  packetLength(): number;
-  setMeta(meta: IPacketMeta): void;
-}
-export interface ISocksPacketClass {
-  displayName: string;
-  new (optionsOrBuffer: Buffer | any): ISocksPacket;
-}
 
 type TBufferReader = (offset?: number) => number;
 type TBufferWriter = (value: number, offset?: number) => SmartBuffer;
@@ -45,7 +35,7 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
   protected _options: T | null = null;
   protected _buffer: Buffer | null = null;
   private _isValidated: boolean = false;
-  constructor(optionsOrBuffer: T | Buffer) {
+  constructor(optionsOrBuffer: WithBuffer<T>) {
     if (optionsOrBuffer instanceof Buffer) {
       this._buffer = optionsOrBuffer;
     } else {
@@ -85,6 +75,7 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
             ERRORS.PACKET_TO_BUFFER_ERROR +
               ", keyForValue expect to be string or array, but got " +
               typeof keyForValue,
+            options,
             model,
           );
         }

@@ -1,10 +1,10 @@
-import { IProtocolDecoderOptions, ProtocolDecoder } from "./decoder";
-import { IProtocolEncoderOptions, ProtocolEncoder } from "./encoder";
+import { ISocksDecoderOptions, SocksDecoder } from "./decoder";
+import { ISocksEncoderOptions, SocksEncoder } from "./encoder";
 
-export function encoder(options?: IProtocolEncoderOptions) {
-  return new ProtocolEncoder(options);
+export function encoder(options?: ISocksEncoderOptions) {
+  return new SocksEncoder(options);
 }
 
-export function decoder(options: IProtocolDecoderOptions) {
-  return new ProtocolDecoder(options);
+export function decoder(options: ISocksDecoderOptions) {
+  return new SocksDecoder(options);
 }

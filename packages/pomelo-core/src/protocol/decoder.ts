@@ -6,15 +6,23 @@ import { ISocksPacketClass } from "./packet";
 
 const debug = require("debug")("pomelo-core:decoder");
 
-export interface IProtocolDecoderOptions extends WritableOptions {
+export interface ISocksDecoderOptions extends WritableOptions {
   PacketClass: ISocksPacketClass | ISocksPacketClass[];
 }
-export class ProtocolDecoder extends Writable {
+
+export interface ISocksDecoder extends Writable {
+  destroy(): void;
+  // on(event: string | symbol, listener: (...args: any[]) => void): this;
+  // once(event: string | symbol, listener: (...args: any[]) => void): this;
+  // on(event: EPacketType, listener: VoidFunction): void;
+}
+
+export class SocksDecoder extends Writable {
   private _buf: Buffer | null = null;
   private _PacketClasses: ISocksPacketClass[];
   private _index: number = 0;
   private _groupMode: boolean;
-  constructor(options: IProtocolDecoderOptions) {
+  constructor(options: ISocksDecoderOptions) {
     super(options);
 
     if (Array.isArray(options.PacketClass)) {
@@ -27,10 +35,10 @@ export class ProtocolDecoder extends Writable {
   }
 
   private get _isDone() {
-    return !!this.activePacketClass;
+    return !this._activePacketClass;
   }
 
-  public get activePacketClass(): ISocksPacketClass | undefined {
+  private get _activePacketClass(): ISocksPacketClass | undefined {
     // if (!this._PacketClasses[this._index]) {
     //   throw new ProtocolError(
     //     ERRORS.PROTOCOL_DECODE_ERROR +
@@ -54,6 +62,7 @@ export class ProtocolDecoder extends Writable {
         debug("write, process loop, buf: %o", this._buf);
 
         if (this._isDone) {
+          debug("write, is done");
           this.destroy();
           break;
         }
@@ -77,18 +86,18 @@ export class ProtocolDecoder extends Writable {
   }
 
   private _decode(): boolean {
-    debug("decode, start");
-    if (!this.activePacketClass) {
+    if (!this._activePacketClass) {
       throw new ProtocolError(
         ERRORS.PROTOCOL_DECODE_ERROR
-        + `expect options.PacketClass has a value, but got ${typeof this.activePacketClass}`,
+        + `expect options.PacketClass has a value, but got ${typeof this._activePacketClass}`,
       );
     }
+    debug("decode, start, activePacketClass: %o", this._activePacketClass.name);
     if (!this._buf) {
       debug("decode, stop, invalid buffer");
       return false;
     }
-    const packet = new this.activePacketClass(this._buf);
+    const packet = new this._activePacketClass(this._buf);
     const packetLength = packet.packetLength();
     const restLen = this._buf.length - packetLength;
 
@@ -104,8 +113,10 @@ export class ProtocolDecoder extends Writable {
     }
 
     const obj = packet.toJSON();
-    debug("decode, emit: %s, obj: %o", this.activePacketClass.displayName, obj);
-    this.emit(this.activePacketClass.displayName, obj);
+    debug("decode, emit: %s, obj: %o", this._activePacketClass.displayName, obj);
+    this.emit("decode", { data: obj, type: this._activePacketClass.displayName });
+    this.emit(this._activePacketClass.displayName, obj);
+
     this._nextIndex();
     if (restLen) {
       this._buf = this._buf.slice(packetLength);

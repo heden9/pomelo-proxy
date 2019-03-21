@@ -39,6 +39,7 @@ export class ProtocolError extends Error {
   constructor(
     message: string,
     public options?: any,
+    public model?: any,
   ) {
     super(message);
   }

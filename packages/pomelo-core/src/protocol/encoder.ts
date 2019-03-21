@@ -9,21 +9,34 @@ import {
   SocksHandshakeRequest,
   SocksHandshakeResponse,
 } from "./packet";
-import { EPacketType } from "./packet/type";
+import {
+  EPacketType,
+  TSocksConnectRequestOptionsOrBuffer,
+  TSocksConnectResponseOptionsOrBuffer,
+  TSocksHandshakeRequestOptionsOrBuffer,
+  TSocksHandshakeResponseOptionsOrBuffer,
+} from "./packet/type";
 import {
   IEncoderCallback,
-  IEncoderPacketOptions,
+  TEncoderCreatePacketOptions,
   TEncoderTaskQueue,
 } from "./type";
 
-export interface IProtocolEncoderOptions extends TransformOptions {}
+export interface ISocksEncoder extends Transform {
+  writePacket(
+    options: TEncoderCreatePacketOptions,
+    callback?: IEncoderCallback,
+  ): void;
+}
+
+export interface ISocksEncoderOptions extends TransformOptions {}
 
 const debug = require("debug")("pomelo-core:encoder");
 
-export class ProtocolEncoder extends Transform {
+export class SocksEncoder extends Transform {
   private _limited = false;
   private _queue: TEncoderTaskQueue[] = [];
-  constructor(options?: IProtocolEncoderOptions) {
+  constructor(options?: ISocksEncoderOptions) {
     super(options);
 
     this.once("close", () => {
@@ -57,7 +70,7 @@ export class ProtocolEncoder extends Transform {
   }
 
   public writePacket(
-    options: IEncoderPacketOptions & any,
+    options: TEncoderCreatePacketOptions,
     callback: IEncoderCallback = noop,
   ) {
     debug("writePacket, start, options: %o", options);
@@ -76,6 +89,8 @@ export class ProtocolEncoder extends Transform {
         });
         debug("writePacket, end, packet: %o", packet);
       } catch (err) {
+        // TODO:
+        console.error(err);
         callback(err, options);
         return;
       }
@@ -89,16 +104,27 @@ export class ProtocolEncoder extends Transform {
     }
   }
 
-  private _createPacket(type: EPacketType, packet: any): ISocksPacket {
+  private _createPacket(
+    type: EPacketType,
+    packet: TEncoderCreatePacketOptions,
+  ): ISocksPacket {
     switch (type) {
       case EPacketType.CONNECT_REQUEST:
-        return new SocksConnectRequest(packet);
+        return new SocksConnectRequest(
+          packet as TSocksConnectRequestOptionsOrBuffer,
+        );
       case EPacketType.CONNECT_RESPONSE:
-        return new SocksConnectResponse(packet);
+        return new SocksConnectResponse(
+          packet as TSocksConnectResponseOptionsOrBuffer,
+        );
       case EPacketType.HANDSHAKE_REQUEST:
-        return new SocksHandshakeRequest(packet);
+        return new SocksHandshakeRequest(
+          packet as TSocksHandshakeRequestOptionsOrBuffer,
+        );
       case EPacketType.HANDSHAKE_RESPONSE:
-        return new SocksHandshakeResponse(packet);
+        return new SocksHandshakeResponse(
+          packet as TSocksHandshakeResponseOptionsOrBuffer,
+        );
       default:
         throw new ProtocolError(
           ERRORS.PROTOCOL_DECODE_ERROR +

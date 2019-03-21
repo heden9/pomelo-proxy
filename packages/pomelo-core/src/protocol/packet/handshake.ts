@@ -4,16 +4,10 @@ import {
   EPacketType,
   ESocksMethods,
   ESocksModel,
-  ISocksBaseOptions,
+  ISocksHandshakeRequestModel,
+  ISocksHandshakeRequestOptions,
+  ISocksHandshakeResponseOptions,
 } from "./type";
-
-export interface ISocksHandshakeRequestOptions extends ISocksBaseOptions {
-  methods: ESocksMethods[];
-}
-
-interface ISocksHandshakeRequestModel extends ISocksHandshakeRequestOptions {
-  nmMethods: number;
-}
 
 export class SocksHandshakeRequest extends SocksV5PacketBase<ISocksHandshakeRequestOptions> {
   public static models = [
@@ -33,25 +27,19 @@ export class SocksHandshakeRequest extends SocksV5PacketBase<ISocksHandshakeRequ
     ),
   ];
 
+  static get displayName() {
+    return EPacketType.HANDSHAKE_REQUEST;
+  }
+
   public packetLength() {
     if (this._buffer === null || this._buffer.length < 2) {
       return 0;
     }
     return 2 + this._buffer[1];
   }
-
-  static get displayName() {
-    return EPacketType.HANDSHAKE_REQUEST;
-  }
 }
 
-export interface ISocksHandshakeResponseOptions extends ISocksBaseOptions {
-  method: ESocksMethods;
-}
-
-export class SocksHandshakeResponse extends SocksV5PacketBase<
-  ISocksHandshakeResponseOptions
-> {
+export class SocksHandshakeResponse extends SocksV5PacketBase<ISocksHandshakeResponseOptions> {
   public static models = [
     ...SocksV5PacketBase.models,
     createModel<ISocksHandshakeResponseOptions>(

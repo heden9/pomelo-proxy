@@ -1,6 +1,7 @@
 import { SmartBuffer } from "smart-buffer";
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+export type WithBuffer<T> = T | Buffer;
 
 export enum ERRORS {
   PACKET_TO_BUFFER_ERROR = "PACKET_TO_BUFFER_ERROR",
@@ -109,3 +110,72 @@ export interface IPacketMeta {
   size: number;
   encodeRT: number;
 }
+
+// base
+export interface ISocksPacket {
+  toBuffer(): Buffer;
+  toJSON(): any;
+  packetLength(): number;
+  setMeta(meta: IPacketMeta): void;
+}
+export interface ISocksPacketClass {
+  displayName: string;
+  new (optionsOrBuffer: Buffer | any): ISocksPacket;
+}
+
+// connectRequest
+export interface ISocksConnectBaseModel extends ISocksBaseOptions {
+  address: string;
+  port: number;
+  reserved: number;
+  addressType: ESocksAddressType;
+  command: number;
+}
+
+export interface ISocksConnectBaseOptions extends ISocksBaseOptions {
+  address: string;
+  port: number;
+  command: number;
+}
+
+export interface ISocksConnectRequestOptions extends ISocksConnectBaseOptions {
+  command: ESocksCommand;
+}
+
+export interface ISocksConnectResponseOptions extends ISocksBaseOptions {
+  address: string;
+  port: number;
+  reply: ESocksReply;
+}
+
+export interface ISocksConnectResponseJsonModel extends ISocksConnectBaseModel {
+  reply: ESocksReply;
+}
+
+
+// handshake
+export interface ISocksHandshakeRequestOptions extends ISocksBaseOptions {
+  methods: ESocksMethods[];
+}
+
+export interface ISocksHandshakeResponseOptions extends ISocksBaseOptions {
+  method: ESocksMethods;
+}
+
+export interface ISocksHandshakeRequestModel extends ISocksHandshakeRequestOptions {
+  nmMethods: number;
+}
+
+// options
+export type TSocksConnectResponseOptionsOrBuffer = WithBuffer<ISocksConnectResponseOptions>;
+export type TSocksConnectRequestOptionsOrBuffer = WithBuffer<ISocksConnectRequestOptions>;
+export type TSocksConnectBaseOptionsOrBuffer = WithBuffer<ISocksConnectBaseOptions>;
+
+export type TSocksHandshakeRequestOptionsOrBuffer = WithBuffer<ISocksHandshakeRequestOptions>;
+export type TSocksHandshakeResponseOptionsOrBuffer = WithBuffer<ISocksHandshakeResponseOptions>;
+
+export interface ISocksConnectRequest extends ISocksPacket {
+  // toJSON():
+}
+
+// TODO: 收敛各个packet的构造参数

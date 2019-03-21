@@ -9,28 +9,12 @@ import {
   ESocksAddressType,
   ESocksCommand,
   ESocksModel,
-  ESocksReply,
-  ISocksBaseOptions,
-  Omit,
+  ISocksConnectBaseModel,
+  ISocksConnectResponseJsonModel,
+  TSocksConnectBaseOptionsOrBuffer,
+  TSocksConnectRequestOptionsOrBuffer,
+  TSocksConnectResponseOptionsOrBuffer,
 } from "./type";
-
-interface ISocksConnectBaseModel extends ISocksBaseOptions {
-  address: string;
-  port: number;
-  reserved: number;
-  addressType: ESocksAddressType;
-  command: number;
-}
-
-type TSocksConnectBaseOptions = Omit<ISocksConnectBaseModel, "addressType" | "reserved">;
-
-export type TSocksConnectRequestOptions = TSocksConnectBaseOptions & {
-  command: ESocksCommand;
-};
-
-export type TSocksConnectResponseOptions = Omit<TSocksConnectBaseOptions, "command"> & {
-  reply: ESocksReply;
-};
 
 /**
  * socks连接基础包
@@ -40,7 +24,6 @@ export type TSocksConnectResponseOptions = Omit<TSocksConnectBaseOptions, "comma
  * @extends {SocksV5PacketBase<ISocksConnectBaseModel>}
  */
 class SocksConnectBase extends SocksV5PacketBase<ISocksConnectBaseModel> {
-
   public static models = [
     ...SocksV5PacketBase.models,
     createModel<ISocksConnectBaseModel>(
@@ -106,7 +89,7 @@ class SocksConnectBase extends SocksV5PacketBase<ISocksConnectBaseModel> {
     ),
   ];
 
-  constructor(optionsOrBuffer: TSocksConnectBaseOptions | Buffer) {
+  constructor(optionsOrBuffer: TSocksConnectBaseOptionsOrBuffer) {
     if (optionsOrBuffer instanceof Buffer) {
       super(optionsOrBuffer);
     } else {
@@ -162,7 +145,7 @@ export class SocksConnectRequest extends SocksConnectBase {
     return EPacketType.CONNECT_REQUEST;
   }
 
-  constructor(optionsOrBuffer: TSocksConnectRequestOptions | Buffer) {
+  constructor(optionsOrBuffer: TSocksConnectRequestOptionsOrBuffer) {
     super(optionsOrBuffer);
   }
 }
@@ -179,7 +162,7 @@ export class SocksConnectResponse extends SocksConnectBase {
     return EPacketType.CONNECT_RESPONSE;
   }
 
-  constructor(optionsOrBuffer: TSocksConnectResponseOptions | Buffer) {
+  constructor(optionsOrBuffer: TSocksConnectResponseOptionsOrBuffer) {
     if (optionsOrBuffer instanceof Buffer) {
       super(optionsOrBuffer);
     } else {
@@ -187,7 +170,7 @@ export class SocksConnectResponse extends SocksConnectBase {
     }
   }
 
-  public toJSON(): ISocksConnectBaseModel & { reply: ESocksReply } {
+  public toJSON(): ISocksConnectResponseJsonModel {
     const obj = super.toJSON();
     return Object.assign(obj, {
       reply: obj.command,
