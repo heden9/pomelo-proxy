@@ -7,6 +7,7 @@ import {
   EPacketType,
   ESocksCommand,
   ESocksMethods,
+  ESocksReply,
   ESocksVersion,
   ISocksConnectResponseJsonModel,
   ISocksHandshakeResponseOptions,
@@ -73,6 +74,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
     return err ? Promise.reject(err) : info;
   }
 
+  public finalErrorData: any;
   private _options: ISocksClientOptions;
   private _socket: Socket = new Socket();
   private _encoder: ISocksEncoder = new SocksEncoder();
@@ -139,6 +141,11 @@ export class SocksClient extends SocksBase implements ISocksClient {
   }
 
   private _closeSocket(err: string) {
+    if (this.finalErrorData) {
+      return;
+    }
+    this.finalErrorData = err;
+
     debug("closeSocket");
     // Destroy Socket
     this._socket.destroy();
@@ -178,13 +185,29 @@ export class SocksClient extends SocksBase implements ISocksClient {
       case ESocksMethods.USER_PASS:
         break;
       default:
+        this._closeSocket(ERRORS.SOCKS_UNKNOWN_AUTH_TYPE);
         break;
     }
   }
 
   private _handleSocksConnect = (data: ISocksConnectResponseJsonModel) => {
-    // TODO: SocksCommand[this._options.command] 判断
-    this.emit("established", { socket: this._socket });
+    if (data.reply !== ESocksReply.SUCCEEDED) {
+      this._closeSocket(
+        `${ERRORS.SOCKS_CONNECTION_REJECTED} - ${
+          ESocksReply[data.reply]
+        }`,
+      );
+      return;
+    }
+    switch (ESocksCommand[this._options.command]) {
+      case ESocksCommand.connect:
+        this._removeInternalSocketHandlers();
+        this.emit("established", { socket: this._socket });
+        break;
+
+      default:
+        break;
+    }
   }
 
   private _onClose = () => {

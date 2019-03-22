@@ -48,7 +48,7 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
   }
 
   public toBuffer() {
-    debug("toBuffer start, options: %o, buffer: %o", this._options, this._buffer);
+    debug("toBuffer start, options: %o, buffer: %o, models: %o", this._options, this._buffer, this.models);
     if (this._options === null) {
       throw new ProtocolError(
         ERRORS.PACKET_TO_BUFFER_ERROR +

@@ -9,6 +9,7 @@ import {
   ESocksAddressType,
   ESocksCommand,
   ESocksModel,
+  ESocksReply,
   ISocksConnectBaseModel,
   ISocksConnectResponseJsonModel,
   TSocksConnectBaseOptionsOrBuffer,
@@ -26,12 +27,12 @@ import {
 class SocksConnectBase extends SocksV5PacketBase<ISocksConnectBaseModel> {
   public static models = [
     ...SocksV5PacketBase.models,
-    createModel<ISocksConnectBaseModel>(
-      ESocksModel.command,
-      {
-        check: ESocksCommand,
-      },
-    ),
+    // createModel<ISocksConnectBaseModel>(
+    //   ESocksModel.command,
+    //   {
+    //     check: ESocksCommand,
+    //   },
+    // ),
     createModel<ISocksConnectBaseModel>(
       ESocksModel.reserved,
       {
@@ -145,6 +146,14 @@ export class SocksConnectRequest extends SocksConnectBase {
     return EPacketType.CONNECT_REQUEST;
   }
 
+  public static models = [
+    SocksConnectBase.models[0],
+    createModel(ESocksModel.command, {
+      check: ESocksCommand,
+    }),
+    ...SocksConnectBase.models.slice(1, SocksConnectBase.models.length),
+  ];
+
   constructor(optionsOrBuffer: TSocksConnectRequestOptionsOrBuffer) {
     super(optionsOrBuffer);
   }
@@ -161,6 +170,14 @@ export class SocksConnectResponse extends SocksConnectBase {
   public static get displayName() {
     return EPacketType.CONNECT_RESPONSE;
   }
+
+  public static models = [
+    SocksConnectBase.models[0],
+    createModel(ESocksModel.command, {
+      check: ESocksReply,
+    }),
+    ...SocksConnectBase.models.slice(1, SocksConnectBase.models.length),
+  ];
 
   constructor(optionsOrBuffer: TSocksConnectResponseOptionsOrBuffer) {
     if (optionsOrBuffer instanceof Buffer) {
