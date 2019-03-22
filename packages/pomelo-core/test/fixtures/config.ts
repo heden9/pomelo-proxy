@@ -12,7 +12,7 @@ import { ESocksMethods } from "../../src/protocol/packet/type";
 interface ITestPacketConfig {
   only?: boolean;
   buffer: Buffer;
-  json: {};
+  json: any;
 }
 
 interface ITestPacketConfigMap {

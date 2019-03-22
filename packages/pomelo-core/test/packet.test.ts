@@ -1,7 +1,7 @@
 import { TEST_CONFIG } from "./fixtures/config";
-import { PacketTestUtil } from "./fixtures/helper";
+import { TestUtil } from "./fixtures/helper";
 
-describe("packet.test.js", () => {
-  new PacketTestUtil(TEST_CONFIG).run();
+describe("packet.test.ts", () => {
+  new TestUtil(TEST_CONFIG).runPacket();
 });
 

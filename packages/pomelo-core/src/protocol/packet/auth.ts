@@ -45,7 +45,7 @@ export class SocksAuthRequest extends SocksV5PacketBase<ISocksAuthRequestOptions
     if (!userNameLen) {
       return 0;
     }
-    const passwordIndex = 2 + userNameLen - 1;
+    const passwordIndex = 2 + userNameLen;
     const passwordLen = this._buffer[passwordIndex];
     if (!passwordLen) {
       return 0;
