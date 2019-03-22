@@ -27,12 +27,6 @@ import {
 class SocksConnectBase extends SocksV5PacketBase<ISocksConnectBaseModel> {
   public static models = [
     ...SocksV5PacketBase.models,
-    // createModel<ISocksConnectBaseModel>(
-    //   ESocksModel.command,
-    //   {
-    //     check: ESocksCommand,
-    //   },
-    // ),
     createModel<ISocksConnectBaseModel>(
       ESocksModel.reserved,
       {

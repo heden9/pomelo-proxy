@@ -10,7 +10,7 @@ const server = net.createServer((socket) => {
   const connectRes = new SocksConnectResponse({
     address: "www.baidu.com",
     port: 90,
-    reply: 1,
+    reply: 0,
     version: 5,
   }).toBuffer();
   let i = 0;

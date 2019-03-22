@@ -16,8 +16,8 @@ import {
 
 const debug = require("debug")("pomelo-core:packet");
 
-type TBufferReader = (offset?: number) => number;
-type TBufferWriter = (value: number, offset?: number) => SmartBuffer;
+type TBufferReader = ((offset?: number) => number) | SmartBuffer["readString"];
+type TBufferWriter = (value: any, offset?: number) => SmartBuffer;
 
 export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> {
 
@@ -70,7 +70,11 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
 
       if (model.for) {
         const keyForValue = options[model.for];
-        if (typeof keyForValue !== "string" && !Array.isArray(keyForValue)) {
+        if (typeof keyForValue === "string") {
+          writeBuff(Buffer.byteLength(keyForValue));
+        } else if (Array.isArray(keyForValue)) {
+          writeBuff(keyForValue.length);
+        } else {
           throw new ProtocolError(
             ERRORS.PACKET_TO_BUFFER_ERROR +
               ", keyForValue expect to be string or array, but got " +
@@ -79,7 +83,6 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
             model,
           );
         }
-        writeBuff(keyForValue.length);
         return;
       }
 
@@ -95,15 +98,17 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
         return;
       }
 
-      if (typeof value !== "number") {
+      // support string
+      if (typeof value === "number" || typeof value === "string") {
+        writeBuff(value);
+      } else {
         throw new ProtocolError(
           ERRORS.PACKET_TO_BUFFER_ERROR +
-            ", value expect to be number, but got " +
+            `, \`${model.key}\` expect to be number, but got ` +
             typeof value,
           model,
         );
       }
-      writeBuff(value);
     });
     const returnBuffer = buffer.toBuffer();
     debug("toBuffer end, result: %o", returnBuffer);
@@ -141,7 +146,7 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
       // 尝试读取元素的size
       const size = sizeMap.get(model.key);
       const val: TBufferVal = size
-        ? this._readBufferBatch(readBuffer, size)
+        ? this._readBufferBatch(readBuffer, size, model)
         : readBuffer();
       // 校验
       this._validateBufferVal(val, model, !!model.for);
@@ -190,9 +195,12 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
     }
   }
 
-  private _readBufferBatch(readBuffer: TBufferReader, count: number): number[] {
-    debug("_readBufferBatch, start, count: %s", count);
-    const array: number[] = [];
+  private _readBufferBatch(readBuffer: TBufferReader, count: number, model: IPacketModel<T>): TBufferValBase[] | string {
+    debug("_readBufferBatch, start, count: %s, model: %o", count, model);
+    if (model.type === EPacketModelType.string) {
+      return readBuffer(count) as string;
+    }
+    const array: TBufferValBase[] = [];
     for (let index = 0; index < count; index++) {
       const val = readBuffer();
       debug("_readBufferBatch, process loop, val: %s", val);
@@ -216,6 +224,10 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
       case EPacketModelType.int16:
         write = buff.writeUInt16BE;
         read = buff.readUInt16BE;
+        break;
+      case EPacketModelType.string:
+        write = buff.writeString;
+        read = buff.readString;
         break;
       default:
         write = buff.writeUInt8;

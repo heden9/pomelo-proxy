@@ -21,6 +21,11 @@ export enum ESocksModel {
   addressType = "addressType",
   address = "address",
   port = "port",
+
+  userNameLen = "userNameLen",
+  userName = "userName",
+  passwordLen = "passwordLen",
+  password = "password",
 }
 
 export enum EPacketType {
@@ -28,6 +33,8 @@ export enum EPacketType {
   CONNECT_RESPONSE = "CONNECT_RESPONSE",
   HANDSHAKE_REQUEST = "HANDSHAKE_REQUEST",
   HANDSHAKE_RESPONSE = "HANDSHAKE_RESPONSE",
+  AUTH_REQUEST = "AUTH_REQUEST",
+  AUTH_RESPONSE = "AUTH_RESPONSE",
 }
 
 export enum ESocksMethods {
@@ -75,6 +82,7 @@ export enum ESocksAddressType {
 export enum EPacketModelType {
   int8 = "int8",
   int16 = "int16",
+  string = "string",
 }
 
 export type TBufferValBase = number | string;
@@ -166,6 +174,17 @@ export interface ISocksHandshakeRequestModel extends ISocksHandshakeRequestOptio
   nmMethods: number;
 }
 
+// auth
+export interface ISocksAuthRequestOptions extends ISocksBaseOptions {
+  userName: string;
+  password: string;
+}
+
+export interface ISocksAuthRequestModel extends ISocksAuthRequestOptions {
+  userNameLen: string;
+  passwordLen: string;
+}
+
 // options
 export type TSocksConnectResponseOptionsOrBuffer = WithBuffer<ISocksConnectResponseOptions>;
 export type TSocksConnectRequestOptionsOrBuffer = WithBuffer<ISocksConnectRequestOptions>;
@@ -174,6 +193,7 @@ export type TSocksConnectBaseOptionsOrBuffer = WithBuffer<ISocksConnectBaseOptio
 export type TSocksHandshakeRequestOptionsOrBuffer = WithBuffer<ISocksHandshakeRequestOptions>;
 export type TSocksHandshakeResponseOptionsOrBuffer = WithBuffer<ISocksHandshakeResponseOptions>;
 
+export type TSocksAuthRequestOptionsOrBuffer = WithBuffer<ISocksAuthRequestOptions>;
 export interface ISocksConnectRequest extends ISocksPacket {
   // toJSON():
 }

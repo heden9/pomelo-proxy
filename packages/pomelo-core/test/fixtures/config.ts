@@ -1,5 +1,6 @@
 import {
   ISocksPacketClass,
+  SocksAuthRequest,
   SocksConnectRequest,
   SocksConnectResponse,
   SocksHandshakeRequest,
@@ -107,6 +108,19 @@ const SOCKS_HANDSHAKE_REQ: ITestPacketConfigMap = {
   },
 };
 
+const SOCKS_AUTH_REQ: ITestPacketConfigMap = {
+  BASIC: {
+    buffer: Buffer.from([0x05, 0x03, 0x78, 0x78, 0x78, 0x03, 0x78, 0x78, 0x78]),
+    json: {
+      password: "xxx",
+      passwordLen: 3,
+      userName: "xxx",
+      userNameLen: 3,
+      version: 5,
+    },
+  },
+};
+
 export const TEST_CONFIG: ITestConfig[] = [
 {
   class: SocksConnectRequest,
@@ -123,5 +137,9 @@ export const TEST_CONFIG: ITestConfig[] = [
 {
   class: SocksHandshakeResponse,
   data: SOCKS_HANDSHAKE_RES,
+},
+{
+  class: SocksAuthRequest,
+  data: SOCKS_AUTH_REQ,
 }];
 
