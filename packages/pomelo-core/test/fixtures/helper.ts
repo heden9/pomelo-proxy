@@ -1,5 +1,6 @@
 import * as assert from "power-assert";
-import { PassThrough, pipeline } from "stream";
+import pump from "pump";
+import { PassThrough } from "stream";
 import * as protocol from "../../src/protocol";
 import { ITestConfig } from "./config";
 
@@ -44,7 +45,7 @@ export class TestUtil {
         const decoder = protocol.decoder({
           PacketClass: source.class,
         });
-        pipeline(encoder, socket, decoder);
+        pump(encoder, socket, decoder);
         const type = source.class.displayName;
         const promise = awaitEvent(decoder, "decode");
         encoder.writePacket({

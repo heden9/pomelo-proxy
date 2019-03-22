@@ -1,5 +1,5 @@
 import * as net from "net";
-import { pipeline } from "stream";
+import pump from "pump";
 import * as Protocol from ".";
 import { SocksConnectRequest } from "./packet";
 import { EPacketType, ESocksCommand, ESocksVersion } from "./packet/type";
@@ -27,7 +27,7 @@ decoder.on(SocksConnectRequest.displayName, (res) => {
 });
 
 net.createServer((server) => {
-  pipeline(
+  pump(
     encoder,
     server,
     socket,

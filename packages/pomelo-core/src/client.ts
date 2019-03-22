@@ -1,5 +1,5 @@
 import { Socket } from "net";
-import { pipeline } from "stream";
+import pump from "pump";
 import { SocksBase } from "./base";
 import { ISocksDecoder, SocksDecoder } from "./protocol/decoder";
 import { ISocksEncoder, SocksEncoder } from "./protocol/encoder";
@@ -109,7 +109,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
       this._socket = existingSocket;
     }
 
-    pipeline(this._encoder, this._socket, this._decoder);
+    pump(this._encoder, this._socket, this._decoder);
     this._socket.once("close", this._onClose);
     this._socket.once("error", this._onError);
     this._socket.once("connect", this._onConnect);
