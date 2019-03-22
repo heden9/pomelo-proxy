@@ -4,6 +4,8 @@ import { ERRORS } from "./constant";
 import { noop, ProtocolError } from "./helper";
 import {
   ISocksPacket,
+  SocksAuthRequest,
+  SocksAuthResponse,
   SocksConnectRequest,
   SocksConnectResponse,
   SocksHandshakeRequest,
@@ -11,6 +13,8 @@ import {
 } from "./packet";
 import {
   EPacketType,
+  TSocksAuthRequestOptionsOrBuffer,
+  TSocksAuthResponseOptionsOrBuffer,
   TSocksConnectRequestOptionsOrBuffer,
   TSocksConnectResponseOptionsOrBuffer,
   TSocksHandshakeRequestOptionsOrBuffer,
@@ -104,6 +108,36 @@ export class SocksEncoder extends Transform {
     }
   }
 
+  // private _createPacket(
+  //   type: EPacketType,
+  //   packet: TSocksConnectRequestOptionsOrBuffer,
+  // ): SocksConnectRequest;
+
+  // private _createPacket(
+  //   type: EPacketType,
+  //   packet: TSocksConnectResponseOptionsOrBuffer,
+  // ): SocksConnectResponse;
+
+  // private _createPacket(
+  //   type: EPacketType,
+  //   packet: TSocksHandshakeRequestOptionsOrBuffer,
+  // ): SocksHandshakeRequest;
+
+  // private _createPacket(
+  //   type: EPacketType,
+  //   packet: TSocksHandshakeResponseOptionsOrBuffer,
+  // ): SocksHandshakeResponse;
+
+  // private _createPacket(
+  //   type: EPacketType,
+  //   packet: TSocksAuthRequestOptionsOrBuffer,
+  // ): SocksAuthRequest;
+
+  // private _createPacket(
+  //   type: EPacketType,
+  //   packet: TSocksAuthResponseOptionsOrBuffer,
+  // ): SocksAuthResponse;
+
   private _createPacket(
     type: EPacketType,
     packet: TEncoderCreatePacketOptions,
@@ -124,6 +158,14 @@ export class SocksEncoder extends Transform {
       case EPacketType.HANDSHAKE_RESPONSE:
         return new SocksHandshakeResponse(
           packet as TSocksHandshakeResponseOptionsOrBuffer,
+        );
+      case EPacketType.AUTH_REQUEST:
+        return new SocksAuthRequest(
+          packet as TSocksAuthRequestOptionsOrBuffer,
+        );
+      case EPacketType.AUTH_RESPONSE:
+        return new SocksAuthResponse(
+          packet as TSocksAuthResponseOptionsOrBuffer,
         );
       default:
         throw new ProtocolError(

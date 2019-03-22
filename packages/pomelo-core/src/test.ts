@@ -1,10 +1,10 @@
 import * as net from "net";
 import { SocksClient } from ".";
-import { SocksConnectResponse, SocksHandshakeResponse } from "./protocol/packet";
+import { ESocksAuthStatus, ESocksMethods, SocksAuthResponse, SocksConnectResponse, SocksHandshakeResponse } from "./protocol/packet";
 
 const server = net.createServer((socket) => {
   const handshakeRes = new SocksHandshakeResponse({
-    method: 0,
+    method: ESocksMethods.USER_PASS,
     version: 5,
   }).toBuffer();
   const connectRes = new SocksConnectResponse({
@@ -13,12 +13,18 @@ const server = net.createServer((socket) => {
     reply: 0,
     version: 5,
   }).toBuffer();
+  const authRes = new SocksAuthResponse({
+    status: ESocksAuthStatus.SUCCEEDED,
+    version: 5,
+  }).toBuffer();
   let i = 0;
   socket.on("data", (s) => {
     console.log(s);
     if (i === 0) {
       socket.write(handshakeRes);
     } else if (i === 1) {
+      socket.write(authRes);
+    } else if (i === 2) {
       socket.write(connectRes);
     }
     i += 1;

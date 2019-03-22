@@ -9,7 +9,7 @@ export enum ERRORS {
   SOCKET_CLOSED = "SOCKET_CLOSED",
   SOCKS_UNKNOWN_AUTH_TYPE = "SOCKS_UNKNOWN_AUTH_TYPE",
   SOCKS_CONNECTION_REJECTED = "SOCKS_CONNECTION_REJECTED",
+  SOCKS_AUTH_REJECTED = "SOCKS_AUTH_REJECTED",
 }
 
-export type TDecodeEvent = "decode";
 export type TSocksCommandOption = "connect" | "bind" | "associate";

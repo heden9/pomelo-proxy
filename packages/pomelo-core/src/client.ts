@@ -5,15 +5,21 @@ import { ISocksDecoder, SocksDecoder } from "./protocol/decoder";
 import { ISocksEncoder, SocksEncoder } from "./protocol/encoder";
 import {
   EPacketType,
+  ESocksAuthStatus,
   ESocksCommand,
   ESocksMethods,
   ESocksReply,
   ESocksVersion,
+  ISocksAuthResponseOptions,
+  ISocksBaseOptions,
   ISocksConnectResponseJsonModel,
   ISocksHandshakeResponseOptions,
+  ISocksPacketClass,
+  SocksAuthResponse,
   SocksConnectResponse,
   SocksHandshakeResponse,
 } from "./protocol/packet";
+import { IDecodeEventInfo } from "./protocol/type";
 import { ERRORS, SocksClientError, TSocksCommandOption } from "./type";
 
 export interface ISocksClientOptions {
@@ -22,7 +28,7 @@ export interface ISocksClientOptions {
     port: number;
     host?: string;
     address?: string;
-    userId?: string;
+    userName?: string;
     password?: string;
   };
   destination: {
@@ -37,7 +43,7 @@ interface ISocksClientEstablishedEvent {}
 
 type TSocksClientCallback = (err: any, info: any) => void;
 
-const debug = require("debug")("pomelo-core:socks-client");
+const debug = require("debug")("pomelo-core:client");
 interface ISocksClient {
   on(event: "connect", listener: VoidFunction): void;
   on(
@@ -65,7 +71,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
     } catch (ex) {
       err = ex;
     }
-    debug("createConnection, error: %s, info: %o", err && err.message, info);
+    debug("createConnection, %s info: %o", err ? `error: ${err.message}` : "success!", info);
     client.removeAllListeners();
     if (typeof callback === "function") {
       callback(err, info);
@@ -79,6 +85,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
   private _socket: Socket = new Socket();
   private _encoder: ISocksEncoder = new SocksEncoder();
   private _decoder: ISocksDecoder;
+  private _PacketClass: ISocksPacketClass[] = [SocksHandshakeResponse];
 
   constructor(options: ISocksClientOptions) {
     super(options);
@@ -89,11 +96,12 @@ export class SocksClient extends SocksBase implements ISocksClient {
     };
 
     this._decoder = new SocksDecoder({
-      PacketClass: [SocksHandshakeResponse, SocksConnectResponse],
+      PacketClass: this._PacketClass,
     });
 
-    this._decoder.once(SocksHandshakeResponse.displayName, this._handleSocksHandshake);
-    this._decoder.once(SocksConnectResponse.displayName, this._handleSocksConnect);
+    // this._decoder.once(SocksHandshakeResponse.displayName, this._handleSocksHandshake);
+    // this._decoder.once(SocksConnectResponse.displayName, this._handleSocksConnect);
+    this._decoder.on("decode", this._handleSocksResponse);
   }
 
   public connect(existingSocket?: Socket) {
@@ -165,7 +173,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
     });
   }
 
-  private _sendSocksConnect(data: ISocksHandshakeResponseOptions) {
+  private _sendSocksConnect(data: ISocksBaseOptions) {
     debug("sendSocksConnect, start");
     this._encoder.writePacket({
       address: this._options.destination.address,
@@ -176,13 +184,29 @@ export class SocksClient extends SocksBase implements ISocksClient {
     });
   }
 
-  private _handleSocksHandshake = (data: ISocksHandshakeResponseOptions) => {
+  private _sendSocksAuth(data: ISocksBaseOptions) {
+    debug("sendSocksAuth, start");
+    this._encoder.writePacket({
+      password: this._options.proxy.password || "",
+      type: EPacketType.AUTH_REQUEST,
+      userName: this._options.proxy.userName || "",
+      version: data.version,
+    });
+  }
+
+  private _handleSocksHandshake(data: ISocksHandshakeResponseOptions)  {
     debug("handleSocksHandshake, start, data: %o", data);
     switch (data.method) {
       case ESocksMethods.NO_AUTH:
+        // TODO: push check
+        debug("handleSocksHandshake, NO_AUTH");
+        this._PacketClass.push(SocksConnectResponse);
         this._sendSocksConnect(data);
         break;
       case ESocksMethods.USER_PASS:
+        debug("handleSocksHandshake, USER_PASS");
+        this._PacketClass.push(SocksAuthResponse, SocksConnectResponse);
+        this._sendSocksAuth(data);
         break;
       default:
         this._closeSocket(ERRORS.SOCKS_UNKNOWN_AUTH_TYPE);
@@ -190,7 +214,8 @@ export class SocksClient extends SocksBase implements ISocksClient {
     }
   }
 
-  private _handleSocksConnect = (data: ISocksConnectResponseJsonModel) => {
+  private _handleSocksConnect(data: ISocksConnectResponseJsonModel) {
+    debug("handleSocksConnect, start, data: %o", data);
     if (data.reply !== ESocksReply.SUCCEEDED) {
       this._closeSocket(
         `${ERRORS.SOCKS_CONNECTION_REJECTED} - ${
@@ -205,6 +230,36 @@ export class SocksClient extends SocksBase implements ISocksClient {
         this.emit("established", { socket: this._socket });
         break;
 
+      default:
+        break;
+    }
+  }
+
+  private _handleSocksAuth(data: ISocksAuthResponseOptions) {
+    debug("handleSocksAuth, start, data: %o", data);
+    if (data.status !== ESocksAuthStatus.SUCCEEDED) {
+      this._closeSocket(
+        `${ERRORS.SOCKS_CONNECTION_REJECTED} - ${
+          ESocksAuthStatus[data.status]
+        }`,
+      );
+      return;
+    }
+    this._sendSocksConnect(data);
+  }
+
+  private _handleSocksResponse = (info: IDecodeEventInfo) => {
+    debug("handleSocksResponse, start, info: %o", info);
+    switch (info.type) {
+      case EPacketType.CONNECT_RESPONSE:
+        this._handleSocksConnect(info.data);
+        break;
+      case EPacketType.HANDSHAKE_RESPONSE:
+        this._handleSocksHandshake(info.data);
+        break;
+      case EPacketType.AUTH_RESPONSE:
+        this._handleSocksAuth(info.data);
+        break;
       default:
         break;
     }

@@ -204,6 +204,7 @@ export type TSocksHandshakeRequestOptionsOrBuffer = WithBuffer<ISocksHandshakeRe
 export type TSocksHandshakeResponseOptionsOrBuffer = WithBuffer<ISocksHandshakeResponseOptions>;
 
 export type TSocksAuthRequestOptionsOrBuffer = WithBuffer<ISocksAuthRequestOptions>;
+export type TSocksAuthResponseOptionsOrBuffer = WithBuffer<ISocksAuthResponseOptions>;
 export interface ISocksConnectRequest extends ISocksPacket {
   // toJSON():
 }
