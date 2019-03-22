@@ -1,6 +1,6 @@
 import { SocksV5PacketBase } from "./base";
 import { createModel } from "./helper";
-import { EPacketModelType, EPacketType, ESocksModel, ISocksAuthRequestModel, ISocksAuthRequestOptions } from "./type";
+import { EPacketModelType, EPacketType, ESocksAuthStatus, ESocksModel, ISocksAuthRequestModel, ISocksAuthRequestOptions, ISocksAuthResponseOptions } from "./type";
 
 export class SocksAuthRequest extends SocksV5PacketBase<ISocksAuthRequestOptions> {
   public static models = [
@@ -51,5 +51,28 @@ export class SocksAuthRequest extends SocksV5PacketBase<ISocksAuthRequestOptions
       return 0;
     }
     return 2 + userNameLen + 1 + passwordLen;
+  }
+}
+
+export class SocksAuthResponse extends SocksV5PacketBase<ISocksAuthResponseOptions> {
+  public static models = [
+    ...SocksV5PacketBase.models,
+    createModel<ISocksAuthResponseOptions>(
+      ESocksModel.status,
+      {
+        check: ESocksAuthStatus,
+      },
+    ),
+  ];
+
+  static get displayName() {
+    return EPacketType.AUTH_RESPONSE;
+  }
+
+  public packetLength() {
+    if (this._buffer === null || this._buffer.length < 2) {
+      return 0;
+    }
+    return 2;
   }
 }

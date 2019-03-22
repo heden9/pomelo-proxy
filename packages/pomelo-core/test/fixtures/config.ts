@@ -1,6 +1,7 @@
 import {
   ISocksPacketClass,
   SocksAuthRequest,
+  SocksAuthResponse,
   SocksConnectRequest,
   SocksConnectResponse,
   SocksHandshakeRequest,
@@ -121,6 +122,16 @@ const SOCKS_AUTH_REQ: ITestPacketConfigMap = {
   },
 };
 
+const SOCKS_AUTH_RES: ITestPacketConfigMap = {
+  BASIC: {
+    buffer: Buffer.from([0x05, 0x00]),
+    json: {
+      status: 0x00,
+      version: 5,
+    },
+  },
+};
+
 export const TEST_CONFIG: ITestConfig[] = [
 {
   class: SocksConnectRequest,
@@ -141,5 +152,9 @@ export const TEST_CONFIG: ITestConfig[] = [
 {
   class: SocksAuthRequest,
   data: SOCKS_AUTH_REQ,
+},
+{
+  class: SocksAuthResponse,
+  data: SOCKS_AUTH_RES,
 }];
 

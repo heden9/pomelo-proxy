@@ -49,13 +49,7 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
 
   public toBuffer() {
     debug("toBuffer start, options: %o, buffer: %o, models: %o", this._options, this._buffer, this.models);
-    if (this._options === null) {
-      throw new ProtocolError(
-        ERRORS.PACKET_TO_BUFFER_ERROR +
-        ", _options's type expect to be `T extends ISocksBaseOptions`, but got "
-        + typeof this._options,
-      );
-    }
+    this._validateOptions();
 
     const buffer = new SmartBuffer();
     this.models.forEach((model) => {
@@ -126,7 +120,7 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
     debug("toJSON start, options: %o, buffer: %o", this._options, this._buffer);
 
     const buffer = SmartBuffer.fromBuffer(this._buffer);
-    const obj: Partial<T> = {};
+    const obj = {} as T;
     const sizeMap: Map<keyof T, number> = new Map();
     this.models.forEach((model) => {
       debug("toJSON process loop, model: %o", model);
@@ -159,7 +153,7 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
       obj[model.key] = val as any;
     });
     debug("toJSON end, result: %o", obj);
-    return obj as T;
+    return obj;
   }
 
   private _validateBufferVal = (value: TBufferVal | undefined, model: IPacketModel<T>, forceCheck: boolean) => {
@@ -234,5 +228,24 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
         read = buff.readUInt8;
     }
     return [write.bind(buff), read.bind(buff)];
+  }
+
+  private _validateOptions() {
+    if (!this._options) {
+      throw new ProtocolError(
+        ERRORS.PACKET_VALIDATE_ERROR +
+        ", _options's type expect to be `T extends ISocksBaseOptions`, but got "
+        + typeof this._options,
+      );
+    }
+
+    for (const model of this.models) {
+      if (typeof this._options[model.key] === undefined) {
+        throw new ProtocolError(
+          ERRORS.PACKET_VALIDATE_ERROR +
+          `, expect \`${model.key}\` in options to be ${model.type}, but got undefined`,
+        );
+      }
+    }
   }
 }

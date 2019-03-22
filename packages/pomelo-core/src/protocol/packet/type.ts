@@ -26,6 +26,8 @@ export enum ESocksModel {
   userName = "userName",
   passwordLen = "passwordLen",
   password = "password",
+
+  status = "status",
 }
 
 export enum EPacketType {
@@ -77,6 +79,10 @@ export enum ESocksAddressType {
   IPv4 = 0x01,
   domain = 0x03,
   IPv6 = 0x04,
+}
+
+export enum ESocksAuthStatus {
+  SUCCEEDED = 0x00,
 }
 
 export enum EPacketModelType {
@@ -183,6 +189,10 @@ export interface ISocksAuthRequestOptions extends ISocksBaseOptions {
 export interface ISocksAuthRequestModel extends ISocksAuthRequestOptions {
   userNameLen: string;
   passwordLen: string;
+}
+
+export interface ISocksAuthResponseOptions extends ISocksBaseOptions {
+  status: ESocksAuthStatus;
 }
 
 // options
