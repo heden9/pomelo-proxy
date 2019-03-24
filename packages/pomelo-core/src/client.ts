@@ -90,7 +90,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
 
   private _options: Required<ISocksClientOptions>;
   private _socket: Socket = new Socket();
-  private _encoder: ISocksEncoder = this._protocol.encoder();
+  private _encoder: ISocksEncoder;
   private _decoder: ISocksDecoder;
   private _PacketClass: ISocksPacketClass[] = [SocksHandshakeResponse];
 
@@ -103,6 +103,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
       ...options,
     };
 
+    this._encoder = this._protocol.encoder();
     this._decoder = this._protocol.decoder({
       PacketClass: this._PacketClass,
     });
