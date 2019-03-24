@@ -1,3 +1,4 @@
+import { decoder, encoder } from ".";
 import {
   EPacketType,
   TSocksAuthRequestOptionsOrBuffer,
@@ -32,3 +33,9 @@ export interface IDecodeEventInfo {
 }
 
 export type TDecodeListener = (info: IDecodeEventInfo) => void;
+
+
+export interface ISocksProtocol {
+  encoder: typeof encoder;
+  decoder: typeof decoder;
+}

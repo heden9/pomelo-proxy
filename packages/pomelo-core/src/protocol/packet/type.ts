@@ -83,6 +83,7 @@ export enum ESocksAddressType {
 
 export enum ESocksAuthStatus {
   SUCCEEDED = 0x00,
+  UNASSIGNED = 0xff,
 }
 
 export enum EPacketModelType {

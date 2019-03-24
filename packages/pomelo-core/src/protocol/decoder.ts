@@ -3,7 +3,7 @@ import { Writable, WritableOptions } from "stream";
 import { ERRORS } from "./constant";
 import { ProtocolError } from "./helper";
 import { ISocksPacketClass } from "./packet";
-import { TDecodeEvent, TDecodeListener } from "./type";
+import { IDecodeEventInfo, TDecodeEvent, TDecodeListener } from "./type";
 
 const debug = require("debug")("pomelo-core:decoder");
 
@@ -13,7 +13,8 @@ export interface ISocksDecoderOptions extends WritableOptions {
 
 export interface ISocksDecoder extends Writable {
   destroy(): void;
-  // on(event: string | symbol, listener: (...args: any[]) => void): this;
+  on(event: "decode", listener: (info: IDecodeEventInfo) => void): this;
+  on(event: string | symbol, listener: (...args: any[]) => void): this;
   // once(event: string | symbol, listener: (...args: any[]) => void): this;
   // on(event: EPacketType, listener: VoidFunction): void;
   // on(event: TDecodeEvent, listener: TDecodeListener): void;
@@ -77,6 +78,7 @@ export class SocksDecoder extends Writable {
   }
 
   public destroy() {
+    super.destroy();
     this._buf = null;
     this.emit("close");
   }

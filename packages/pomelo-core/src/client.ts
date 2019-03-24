@@ -1,8 +1,9 @@
 import { Socket } from "net";
 import pump from "pump";
 import { SocksBase } from "./base";
-import { ISocksDecoder, SocksDecoder } from "./protocol/decoder";
-import { ISocksEncoder, SocksEncoder } from "./protocol/encoder";
+import * as protocol from "./protocol";
+import { ISocksDecoder } from "./protocol/decoder";
+import { ISocksEncoder } from "./protocol/encoder";
 import {
   EPacketType,
   ESocksAuthStatus,
@@ -19,7 +20,7 @@ import {
   SocksConnectResponse,
   SocksHandshakeResponse,
 } from "./protocol/packet";
-import { IDecodeEventInfo } from "./protocol/type";
+import { IDecodeEventInfo, ISocksProtocol } from "./protocol/type";
 import { ERRORS, SocksClientError, TSocksCommandOption } from "./type";
 
 export interface ISocksClientOptions {
@@ -37,6 +38,7 @@ export interface ISocksClientOptions {
   };
   command: TSocksCommandOption;
   setNoDelay?: boolean;
+  protocol?: ISocksProtocol;
 }
 
 interface ISocksClientEstablishedEvent {}
@@ -81,9 +83,14 @@ export class SocksClient extends SocksBase implements ISocksClient {
   }
 
   public finalErrorData: any;
-  private _options: ISocksClientOptions;
+
+  private get _protocol() {
+    return this._options.protocol;
+  }
+
+  private _options: Required<ISocksClientOptions>;
   private _socket: Socket = new Socket();
-  private _encoder: ISocksEncoder = new SocksEncoder();
+  private _encoder: ISocksEncoder = this._protocol.encoder();
   private _decoder: ISocksDecoder;
   private _PacketClass: ISocksPacketClass[] = [SocksHandshakeResponse];
 
@@ -91,11 +98,12 @@ export class SocksClient extends SocksBase implements ISocksClient {
     super(options);
 
     this._options = {
+      protocol,
       setNoDelay: true,
       ...options,
     };
 
-    this._decoder = new SocksDecoder({
+    this._decoder = this._protocol.decoder({
       PacketClass: this._PacketClass,
     });
 
@@ -142,6 +150,8 @@ export class SocksClient extends SocksBase implements ISocksClient {
   private _removeInternalSocketHandlers() {
     // Pauses data flow of the socket (this is internally resumed after 'established' is emitted)
     this._encoder.unpipe(this._socket).unpipe(this._decoder);
+    this._encoder.destroy();
+    this._decoder.destroy();
     this._socket.pause();
     this._socket.removeListener("error", this._onError);
     this._socket.removeListener("close", this._onClose);
@@ -166,6 +176,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
   }
 
   private _sendSocks5Handshake() {
+    // TODO: methods
     this._encoder.writePacket({
       methods: [ESocksMethods.NO_AUTH, ESocksMethods.USER_PASS],
       type: EPacketType.HANDSHAKE_REQUEST,
