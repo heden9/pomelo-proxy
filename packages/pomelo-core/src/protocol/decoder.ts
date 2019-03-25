@@ -80,8 +80,10 @@ export class SocksDecoder extends Writable {
 
   public destroy() {
     super.destroy();
+    debug("destroy");
     this._buf = null;
     this.emit("close");
+    this.removeAllListeners();
   }
 
   private _nextIndex() {

@@ -1,4 +1,4 @@
-import { Socket } from "net";
+import * as net from "net";
 import pump from "pump";
 import { SocksBase } from "./base";
 import * as protocol from "./protocol";
@@ -25,19 +25,19 @@ const debug = require("debug")("pomelo-core:connection");
 export type TAuthenticate = (
   userName: string,
   password: string,
-  socket: Socket,
+  socket: net.Socket,
   callback: Function,
 ) => Promise<boolean> | boolean;
 
 export interface ISocksConnectionOptions {
-  socket: Socket;
+  socket: net.Socket;
   protocol: ISocksProtocol;
   maxIdleTime: number;
   authenticate?: TAuthenticate;
 }
 
 export interface _ISocksConnectionOptions {
-  socket: Socket;
+  socket: net.Socket;
   protocol?: ISocksProtocol;
   maxIdleTime?: number;
   authenticate?: TAuthenticate;
@@ -58,6 +58,7 @@ export class SocksConnection extends SocksBase {
 
   public remoteAddress: string;
   public isClosed: boolean = false;
+
   private _options: ISocksConnectionOptions;
   private _decoder: ISocksDecoder;
   private _encoder: ISocksEncoder;
@@ -109,8 +110,19 @@ export class SocksConnection extends SocksBase {
       return Promise.resolve();
     }
 
+    this._removeInternalSocketHandlers();
     this._socket.destroy(err);
     return this.await("close");
+  }
+
+  private _removeInternalSocketHandlers() {
+    this._encoder.unpipe(this._socket);
+    this._socket.unpipe(this._decoder);
+    [this._encoder, this._decoder].forEach((d) => {
+      d.once("unpipe", () => {
+        d.destroy();
+      });
+    });
   }
 
   private _handleSocketClose = () => {
@@ -161,12 +173,23 @@ export class SocksConnection extends SocksBase {
     });
   }
 
+  private _createProxy(data: ISocksConnectRequestOptions) {
+    debug("createProxy, start, data: %o", data);
+    const destination = net.createConnection(data.port, data.address, () => {
+      debug("createProxy, start, success!");
+      pump(destination, this._socket, destination);
+    });
+  }
+
   private _handleSocksConnect(data: ISocksConnectRequestOptions) {
     debug("handleSocksConnect, data: %o", data);
     // TODO: handle logic
     // this.emit("request", data);
     this._sendSocksConnect(data, ESocksReply.SUCCEEDED);
     this.emit("connection", this._socket);
+    // remove
+    this._removeInternalSocketHandlers();
+    this._createProxy(data);
   }
 
   private _handleSocksHandshake(data: ISocksHandshakeRequestOptions) {

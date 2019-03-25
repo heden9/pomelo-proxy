@@ -3,7 +3,7 @@ declare module "graceful" {
   interface IGracefulOptions {
     killTimeout: number;
     server: net.Server[];
-    error: () => void;
+    error: (ex: any) => void;
   }
 
   function graceful(options: IGracefulOptions): void;

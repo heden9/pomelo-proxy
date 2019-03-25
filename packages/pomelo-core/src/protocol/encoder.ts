@@ -64,6 +64,13 @@ export class SocksEncoder extends Transform {
     });
   }
 
+  public destroy() {
+    super.destroy();
+    debug("destroy");
+    this._queue = [];
+    this.removeAllListeners();
+  }
+
   // public writeR
   public _transform(
     buf: Buffer,

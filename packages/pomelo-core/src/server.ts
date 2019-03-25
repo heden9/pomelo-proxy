@@ -72,8 +72,8 @@ export class SocksServer extends SocksBase {
     return this.ready();
   }
 
-  private _handleUncaughtError = () => {
-    // debug('handleUncaughtError')
+  private _handleUncaughtError = (ex: any) => {
+    debug("handleUncaughtError", ex);
   }
 
   private _handleConnection = async (socket: net.Socket) => {
