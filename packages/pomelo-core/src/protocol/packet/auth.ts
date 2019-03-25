@@ -1,10 +1,15 @@
 import { SocksV5PacketBase } from "./base";
 import { createModel } from "./helper";
-import { EPacketModelType, EPacketType, ESocksAuthStatus, ESocksModel, ISocksAuthRequestModel, ISocksAuthRequestOptions, ISocksAuthResponseOptions } from "./type";
+import { EPacketModelType, EPacketType, ESocksAuthStatus, ESocksAuthVersion, ESocksModel, ISocksAuthRequestModel, ISocksAuthRequestOptions, ISocksAuthResponseOptions } from "./type";
 
 export class SocksAuthRequest extends SocksV5PacketBase<ISocksAuthRequestOptions> {
   public static models = [
-    ...SocksV5PacketBase.models,
+    createModel<ISocksAuthRequestModel>(
+      ESocksModel.version,
+      {
+        check: ESocksAuthVersion,
+      },
+    ),
     createModel<ISocksAuthRequestModel>(
       ESocksModel.userNameLen,
       {
@@ -56,7 +61,12 @@ export class SocksAuthRequest extends SocksV5PacketBase<ISocksAuthRequestOptions
 
 export class SocksAuthResponse extends SocksV5PacketBase<ISocksAuthResponseOptions> {
   public static models = [
-    ...SocksV5PacketBase.models,
+    createModel<ISocksAuthRequestModel>(
+      ESocksModel.version,
+      {
+        check: ESocksAuthVersion,
+      },
+    ),
     createModel<ISocksAuthResponseOptions>(
       ESocksModel.status,
       {

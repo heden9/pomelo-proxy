@@ -7,6 +7,7 @@ import { ISocksEncoder } from "./protocol/encoder";
 import {
   EPacketType,
   ESocksAuthStatus,
+  ESocksAuthVersion,
   ESocksCommand,
   ESocksMethods,
   ESocksReply,
@@ -202,7 +203,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
       password: this._options.proxy.password || "",
       type: EPacketType.AUTH_REQUEST,
       userName: this._options.proxy.userName || "",
-      version: data.version,
+      version: ESocksAuthVersion.v1,
     });
   }
 

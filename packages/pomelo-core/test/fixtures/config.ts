@@ -111,23 +111,23 @@ const SOCKS_HANDSHAKE_REQ: ITestPacketConfigMap = {
 
 const SOCKS_AUTH_REQ: ITestPacketConfigMap = {
   BASIC: {
-    buffer: Buffer.from([0x05, 0x03, 0x78, 0x78, 0x78, 0x03, 0x78, 0x78, 0x78]),
+    buffer: Buffer.from([0x01, 0x03, 0x78, 0x78, 0x78, 0x03, 0x78, 0x78, 0x78]),
     json: {
       password: "xxx",
       passwordLen: 3,
       userName: "xxx",
       userNameLen: 3,
-      version: 5,
+      version: 1,
     },
   },
 };
 
 const SOCKS_AUTH_RES: ITestPacketConfigMap = {
   BASIC: {
-    buffer: Buffer.from([0x05, 0x00]),
+    buffer: Buffer.from([0x01, 0x00]),
     json: {
       status: 0x00,
-      version: 5,
+      version: 1,
     },
   },
 };

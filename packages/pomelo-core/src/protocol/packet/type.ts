@@ -51,6 +51,10 @@ export enum ESocksAddressLength {
   IPv6 = 16,
 }
 
+export enum ESocksAuthVersion {
+  v1 = 0x01,
+}
+
 export enum ESocksVersion {
   v4 = 0x04,
   v5 = 0x05,
@@ -115,7 +119,7 @@ export interface IPacketModel<T> {
 }
 
 export interface ISocksBaseOptions {
-  version: ESocksVersion;
+  version: number;
 }
 
 export type TCreateModelOptions<T> = Omit<IPacketModel<T>, "key">;
