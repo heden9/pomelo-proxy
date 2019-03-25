@@ -1,5 +1,5 @@
 import { Socket } from "net";
-import pump = require("pump");
+import pump from "pump";
 import { SocksBase } from "./base";
 import * as protocol from "./protocol";
 import { ISocksDecoder } from "./protocol/decoder";
@@ -9,14 +9,13 @@ import {
   ESocksAuthStatus,
   ESocksMethods,
   ESocksReply,
-  ESocksVersion,
   ISocksAuthRequestOptions,
   ISocksBaseOptions,
   ISocksConnectRequestOptions,
   ISocksHandshakeRequestOptions,
   ISocksPacketClass,
-  SocksAuthResponse,
-  SocksConnectResponse,
+  SocksAuthRequest,
+  SocksConnectRequest,
   SocksHandshakeRequest,
 } from "./protocol/packet";
 import { IDecodeEventInfo, ISocksProtocol } from "./protocol/type";
@@ -37,6 +36,17 @@ export interface ISocksConnectionOptions {
   authenticate?: TAuthenticate;
 }
 
+export interface _ISocksConnectionOptions {
+  socket: Socket;
+  protocol?: ISocksProtocol;
+  maxIdleTime?: number;
+  authenticate?: TAuthenticate;
+}
+export interface ISocksConnection {
+  remoteAddress: string;
+  close(): Promise<boolean>;
+}
+
 export class SocksConnection extends SocksBase {
   private get _socket() {
     return this._options.socket;
@@ -50,11 +60,11 @@ export class SocksConnection extends SocksBase {
   public isClosed: boolean = false;
   private _options: ISocksConnectionOptions;
   private _decoder: ISocksDecoder;
-  private _encoder: ISocksEncoder = this._protocol.encoder();
+  private _encoder: ISocksEncoder;
   private _PacketClass: ISocksPacketClass[] = [SocksHandshakeRequest];
   private _timer: NodeJS.Timeout;
   private _lastActiveTime: number = Date.now();
-  constructor(options: ISocksConnectionOptions) {
+  constructor(options: _ISocksConnectionOptions) {
     super(options);
 
     this._options = {
@@ -70,6 +80,7 @@ export class SocksConnection extends SocksBase {
     this._decoder = this._protocol.decoder({
       PacketClass: this._PacketClass,
     });
+    this._encoder = this._protocol.encoder();
     pump(this._encoder, this._socket, this._decoder);
     this._socket.once("close", this._handleSocketClose);
     this._socket.once("error", this._handleSocketError);
@@ -122,6 +133,7 @@ export class SocksConnection extends SocksBase {
   }
 
   private _sendSocksHandshake(data: ISocksBaseOptions, method: ESocksMethods) {
+    debug("sendSocksHandshake, start, data: %o, method: %s", data, method);
     this._encoder.writePacket({
       method,
       type: EPacketType.HANDSHAKE_RESPONSE,
@@ -130,6 +142,7 @@ export class SocksConnection extends SocksBase {
   }
 
   private _sendSocksAuth(data: ISocksBaseOptions, status: ESocksAuthStatus) {
+    debug("sendSocksAuth, start, data: %o, status: %s", data, status);
     this._encoder.writePacket({
       status,
       type: EPacketType.AUTH_RESPONSE,
@@ -138,6 +151,7 @@ export class SocksConnection extends SocksBase {
   }
 
   private _sendSocksConnect(data: ISocksConnectRequestOptions, reply: ESocksReply) {
+    debug("sendSocksConnect, start, data: %o, reply: %s", data, reply);
     this._encoder.writePacket({
       address: data.address,
       port: data.port,
@@ -148,18 +162,22 @@ export class SocksConnection extends SocksBase {
   }
 
   private _handleSocksConnect(data: ISocksConnectRequestOptions) {
+    debug("handleSocksConnect, data: %o", data);
     // TODO: handle logic
+    // this.emit("request", data);
     this._sendSocksConnect(data, ESocksReply.SUCCEEDED);
+    this.emit("connection", this._socket);
   }
 
   private _handleSocksHandshake(data: ISocksHandshakeRequestOptions) {
+    debug("handleSocksHandshake, data: %o", data);
     let method = ESocksMethods.NO_ACCEPT;
     if (this._options.authenticate && data.methods.indexOf(ESocksMethods.USER_PASS) !== -1) {
       method = ESocksMethods.USER_PASS;
-      this._PacketClass.push(SocksAuthResponse, SocksConnectResponse);
+      this._PacketClass.push(SocksAuthRequest, SocksConnectRequest);
     } else if (!this._options.authenticate && data.methods.indexOf(ESocksMethods.NO_AUTH) !== -1) {
       method = ESocksMethods.NO_AUTH;
-      this._PacketClass.push(SocksConnectResponse);
+      this._PacketClass.push(SocksConnectRequest);
     }
 
     this._sendSocksHandshake(data, method);
@@ -171,6 +189,7 @@ export class SocksConnection extends SocksBase {
   }
 
   private async _handleSocksAuth(data: ISocksAuthRequestOptions) {
+    debug("handleSocksAuth, data: %o", data);
     const authenticate = this._options.authenticate as TAuthenticate;
     const isValid = await authenticate(data.userName, data.password, this._socket, () => {});
     const status = isValid ? ESocksAuthStatus.SUCCEEDED : ESocksAuthStatus.UNASSIGNED;
