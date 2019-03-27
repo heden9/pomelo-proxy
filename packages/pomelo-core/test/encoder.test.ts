@@ -52,7 +52,7 @@ describe("encoder.test.ts", () => {
       });
       pump(encoder, socket, decoder);
 
-      const count = 8000;
+      const count = 1000;
       for (let i = 0; i < count; i++) {
         encoder.writePacket(authReq);
       }
