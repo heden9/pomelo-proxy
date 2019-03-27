@@ -68,6 +68,7 @@ export class SocksEncoder extends Transform {
     super.destroy();
     debug("destroy");
     this._queue = [];
+    this.emit("close");
     this.removeAllListeners();
   }
 

@@ -109,7 +109,7 @@ const SOCKS_HANDSHAKE_REQ: ITestPacketConfigMap = {
   },
 };
 
-const SOCKS_AUTH_REQ: ITestPacketConfigMap = {
+export const SOCKS_AUTH_REQ: ITestPacketConfigMap = {
   BASIC: {
     buffer: Buffer.from([0x01, 0x03, 0x78, 0x78, 0x78, 0x03, 0x78, 0x78, 0x78]),
     json: {
@@ -122,7 +122,7 @@ const SOCKS_AUTH_REQ: ITestPacketConfigMap = {
   },
 };
 
-const SOCKS_AUTH_RES: ITestPacketConfigMap = {
+export const SOCKS_AUTH_RES: ITestPacketConfigMap = {
   BASIC: {
     buffer: Buffer.from([0x01, 0x00]),
     json: {

@@ -2,8 +2,8 @@ import { Writable, WritableOptions } from "stream";
 
 import { ERRORS } from "./constant";
 import { ProtocolError } from "./helper";
-import { ISocksPacketClass } from "./packet";
-import { IDecodeEventInfo, TDecodeEvent, TDecodeListener } from "./type";
+import { EPacketType, ISocksPacketClass } from "./packet";
+import { IDecodeEventInfo } from "./type";
 
 const debug = require("debug")("pomelo-core:decoder");
 
@@ -13,11 +13,8 @@ export interface ISocksDecoderOptions extends WritableOptions {
 
 export interface ISocksDecoder extends Writable {
   destroy(): void;
-  on(event: "decode", listener: (info: IDecodeEventInfo) => void): this;
+  on(event: "decode" | EPacketType, listener: (info: IDecodeEventInfo) => void): this;
   on(event: string | symbol, listener: (...args: any[]) => void): this;
-  // once(event: string | symbol, listener: (...args: any[]) => void): this;
-  // on(event: EPacketType, listener: VoidFunction): void;
-  // on(event: TDecodeEvent, listener: TDecodeListener): void;
 }
 
 export class SocksDecoder extends Writable {
@@ -37,17 +34,11 @@ export class SocksDecoder extends Writable {
     }
   }
 
-  private get _isDone() {
+  public get isDone() {
     return !this._activePacketClass;
   }
 
   private get _activePacketClass(): ISocksPacketClass | undefined {
-    // if (!this._PacketClasses[this._index]) {
-    //   throw new ProtocolError(
-    //     ERRORS.PROTOCOL_DECODE_ERROR +
-    //       `, expect index between 0 - ${this._PacketClasses.length}`,
-    //   );
-    // }
     return this._PacketClasses[this._index];
   }
 
@@ -64,7 +55,7 @@ export class SocksDecoder extends Writable {
       do {
         debug("write, process loop, buf: %o", this._buf);
 
-        if (this._isDone) {
+        if (this.isDone) {
           debug("write, is done");
           this.destroy();
           break;
@@ -133,36 +124,3 @@ export class SocksDecoder extends Writable {
     return false;
   }
 }
-
-// const request = new SocksConnectRequest({
-//   address: "FF01::1101",
-//   command: ESocksCommand.connect,
-//   port: 90,
-//   version: ESocksVersion.v5,
-// });
-// const response = new SocksConnectResponse({
-//   address: "FF01::1101",
-//   port: 90,
-//   reply: ESocksReply.SUCCEEDED,
-//   version: ESocksVersion.v5,
-// });
-// const buff1 = request.toBuffer();
-// const req = new SocksConnectRequest(buff1);
-// req.toJSON();
-// const buff2 = response.toBuffer();
-// const res = new SocksConnectResponse(buff2);
-// const a = res.toJSON();
-// const decoder = new ProtocolDecoder({
-//   PacketClass: SocksConnectRequest,
-// });
-
-// decoder.on(SocksConnectRequest.displayName, (obj) => {
-//   console.log(obj);
-// });
-// const b1 = buff1.slice(0, 2);
-// const b2 = buff1.slice(2, buff1.length);
-// decoder.write(Buffer.concat([buff1, b1]));
-// decoder.write(b1);
-// decoder.write(b1);
-// decoder.write(b1);
-// decoder.end(b2);
