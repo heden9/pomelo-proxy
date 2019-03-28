@@ -27,7 +27,7 @@ describe("encoder.test.ts", () => {
 
         const encoder = protocol.encoder();
         const decoder = protocol.decoder({
-          PacketClass: SocksAuthRequest,
+          PacketClass: [SocksAuthRequest],
         });
         pump(encoder, socket, decoder);
 
@@ -52,19 +52,15 @@ describe("encoder.test.ts", () => {
       });
       pump(encoder, socket, decoder);
 
-      const count = 1000;
+      const count = 6000;
       for (let i = 0; i < count; i++) {
         encoder.writePacket(authReq);
       }
 
-      let counter = 0;
-      decoder.on("decode", (res) => {
-        counter++;
+      decoder.once("decode", (res) => {
         assert.deepEqual({ type: res.type, ...res.data }, authRes);
-        if (counter === count) {
-          socket.destroy();
-          done();
-        }
+        socket.destroy();
+        done();
       });
     });
   });

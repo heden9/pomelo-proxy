@@ -6,7 +6,7 @@ import { ITestConfig } from "./config";
 
 const awaitEvent = require("await-event");
 
-function assertByKey(source: any, target: any) {
+export function assertByKey(source: any, target: any) {
   Object.keys(source).forEach((key) => {
     assert.deepEqual(source[key], target[key]);
   });
