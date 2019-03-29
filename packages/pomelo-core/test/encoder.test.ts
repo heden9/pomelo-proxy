@@ -41,8 +41,7 @@ describe("encoder.test.ts", () => {
       });
     });
     after((done) => {
-      server.close();
-      server.once("close", done);
+      server.close(done);
     });
     it("should process drain ok", (done) => {
       const socket = net.connect(port, "127.0.0.1");
