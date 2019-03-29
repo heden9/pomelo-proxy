@@ -59,7 +59,10 @@ describe("encoder.test.ts", () => {
 
       decoder.once("decode", (res) => {
         assert.deepEqual({ type: res.type, ...res.data }, authRes);
+
         socket.destroy();
+        encoder.destroy();
+        decoder.destroy();
         done();
       });
     });

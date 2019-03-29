@@ -1,6 +1,7 @@
 import { Socket } from "net";
 import pump from "pump";
 import { SocksBase } from "./base";
+import { unpump } from "./helper";
 import * as protocol from "./protocol";
 import { ISocksDecoder } from "./protocol/decoder";
 import { ISocksEncoder } from "./protocol/encoder";
@@ -22,7 +23,7 @@ import {
   SocksHandshakeResponse,
 } from "./protocol/packet";
 import { IDecodeEventInfo, ISocksProtocol } from "./protocol/type";
-import { ERRORS, SocksClientError, TSocksCommandOption } from "./type";
+import { ERRORS, SocksError, TSocksCommandOption } from "./type";
 
 export interface ISocksClientOptions {
   proxy: {
@@ -42,35 +43,37 @@ export interface ISocksClientOptions {
   protocol?: ISocksProtocol;
 }
 
-interface ISocksClientEstablishedEvent {}
+export interface ISocksClientEstablishedEvent {
+  socket: Socket;
+  instance: SocksClient;
+}
 
 type TSocksClientCallback = (err: any, info: any) => void;
 
 const debug = require("debug")("pomelo-core:client");
 interface ISocksClient {
-  on(event: "connect", listener: VoidFunction): void;
-  on(
-    event: "established",
-    listener: (info: ISocksClientEstablishedEvent) => void,
-  ): this;
-  once(
-    event: "established",
-    listener: (info: ISocksClientEstablishedEvent) => void,
-  ): this;
-  emit(event: "established", info: ISocksClientEstablishedEvent): boolean;
+  isClosed: boolean;
+  connect(existingSocket?: Socket): void;
+  close(): Promise<void>;
+  on(event: "connect" | "close", listener: VoidFunction): this;
+  on(event: "established", listener: (info: ISocksClientEstablishedEvent) => void): this;
+
+  once(event: "connect" | "close", listener: VoidFunction): this;
+  once(event: "established", listener: (info: ISocksClientEstablishedEvent) => void): this;
+
 }
 
 export class SocksClient extends SocksBase implements ISocksClient {
   public static async createConnection(
     options: ISocksClientOptions,
     callback?: TSocksClientCallback,
-  ): Promise<ISocksClientEstablishedEvent | undefined> {
+  ): Promise<ISocksClientEstablishedEvent> {
     const client = new SocksClient(options);
     client.connect();
     let info;
     let err = null;
     try {
-      info = (await client.awaitFirst(["established", "error"])).args;
+      info = (await client.awaitFirst(["established", "error"])).args[0];
     } catch (ex) {
       err = ex;
     }
@@ -78,12 +81,14 @@ export class SocksClient extends SocksBase implements ISocksClient {
     client.removeAllListeners();
     if (typeof callback === "function") {
       callback(err, info);
-      return;
+      return info;
     }
     return err ? Promise.reject(err) : info;
   }
 
-  public finalErrorData: any;
+  public get isClosed() {
+    return this._isClosed;
+  }
 
   private get _protocol() {
     return this._options.protocol;
@@ -94,7 +99,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
   private _encoder: ISocksEncoder;
   private _decoder: ISocksDecoder;
   private _PacketClass: ISocksPacketClass[] = [SocksHandshakeResponse];
-
+  private _isClosed: boolean = false;
   constructor(options: ISocksClientOptions) {
     super(options);
 
@@ -109,8 +114,6 @@ export class SocksClient extends SocksBase implements ISocksClient {
       PacketClass: this._PacketClass,
     });
 
-    // this._decoder.once(SocksHandshakeResponse.displayName, this._handleSocksHandshake);
-    // this._decoder.once(SocksConnectResponse.displayName, this._handleSocksConnect);
     this._decoder.on("decode", this._handleSocksResponse);
   }
 
@@ -140,7 +143,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
       } else if (this._options.proxy.address) {
         this._socket.connect(this._options.proxy.address);
       } else {
-        throw new SocksClientError(
+        throw new SocksError(
           ERRORS.SOCKS_CLIENT_ERROR + `, invalid connect options`,
         );
       }
@@ -149,32 +152,43 @@ export class SocksClient extends SocksBase implements ISocksClient {
     }
   }
 
-  private _removeInternalSocketHandlers() {
-    // Pauses data flow of the socket (this is internally resumed after 'established' is emitted)
-    this._encoder.unpipe(this._socket).unpipe(this._decoder);
+  public async close() {
+    if (this._isClosed) {
+      return;
+    }
+    this._closeSocket();
+    await this.await(this._socket, "close");
+    this.emit("close");
+    this.removeAllListeners();
+  }
+
+  private _removeInternalHandlers() {
+    debug("removeInternalSocketHandlers");
+    unpump(this._encoder, this._socket, this._decoder);
+  }
+
+  private _closeSocket(err?: string) {
+    if (this._isClosed) {
+      return;
+    }
+    debug("closeSocket, err: %s", err);
+    this._isClosed = true;
+
+    // Destroy Socket
+    this._socket.destroy();
     this._encoder.destroy();
     this._decoder.destroy();
-    this._socket.pause();
+
+    // Remove internal listeners
+    this._removeInternalHandlers();
+
     this._socket.removeListener("error", this._onError);
     this._socket.removeListener("close", this._onClose);
     this._socket.removeListener("connect", this._onConnect);
-  }
-
-  private _closeSocket(err: string) {
-    if (this.finalErrorData) {
-      return;
-    }
-    this.finalErrorData = err;
-
-    debug("closeSocket");
-    // Destroy Socket
-    this._socket.destroy();
-
-    // Remove internal listeners
-    this._removeInternalSocketHandlers();
-
     // Fire 'error' event.
-    this.emit("error", new SocksClientError(err));
+    if (err) {
+      this.emit("error", new SocksError(err));
+    }
   }
 
   private _sendSocks5Handshake() {
@@ -186,14 +200,14 @@ export class SocksClient extends SocksBase implements ISocksClient {
     });
   }
 
-  private _sendSocksConnect(data: ISocksBaseOptions) {
+  private _sendSocksConnect() {
     debug("sendSocksConnect, start");
     this._encoder.writePacket({
       address: this._options.destination.address,
       command: ESocksCommand[this._options.command],
       port: this._options.destination.port,
       type: EPacketType.CONNECT_REQUEST,
-      version: data.version,
+      version: ESocksVersion.v5,
     });
   }
 
@@ -214,7 +228,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
         // TODO: push check
         debug("handleSocksHandshake, NO_AUTH");
         this._PacketClass.push(SocksConnectResponse);
-        this._sendSocksConnect(data);
+        this._sendSocksConnect();
         break;
       case ESocksMethods.USER_PASS:
         debug("handleSocksHandshake, USER_PASS");
@@ -239,8 +253,8 @@ export class SocksClient extends SocksBase implements ISocksClient {
     }
     switch (ESocksCommand[this._options.command]) {
       case ESocksCommand.connect:
-        this._removeInternalSocketHandlers();
-        this.emit("established", { socket: this._socket });
+        this._removeInternalHandlers();
+        this.emit("established", { socket: this._socket, instance: this });
         break;
 
       default:
@@ -258,7 +272,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
       );
       return;
     }
-    this._sendSocksConnect(data);
+    this._sendSocksConnect();
   }
 
   private _handleSocksResponse = (info: IDecodeEventInfo) => {

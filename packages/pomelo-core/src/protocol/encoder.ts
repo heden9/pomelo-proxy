@@ -40,6 +40,7 @@ const debug = require("debug")("pomelo-core:encoder");
 export class SocksEncoder extends Transform {
   private _limited = false;
   private _queue: TEncoderTaskQueue[] = [];
+  private _isDestroy: boolean = false;
   constructor(options?: ISocksEncoderOptions) {
     super(options);
 
@@ -65,6 +66,10 @@ export class SocksEncoder extends Transform {
   }
 
   public destroy() {
+    if (this._isDestroy) {
+      return;
+    }
+    this._isDestroy = true;
     super.destroy();
     debug("destroy");
     this._queue = [];

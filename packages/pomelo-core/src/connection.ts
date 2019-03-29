@@ -1,6 +1,7 @@
 import * as net from "net";
 import pump from "pump";
 import { SocksBase } from "./base";
+import { unpump } from "./helper";
 import * as protocol from "./protocol";
 import { ISocksDecoder } from "./protocol/decoder";
 import { ISocksEncoder } from "./protocol/encoder";
@@ -19,6 +20,7 @@ import {
   SocksHandshakeRequest,
 } from "./protocol/packet";
 import { IDecodeEventInfo, ISocksProtocol } from "./protocol/type";
+import { SocksError } from "./type";
 
 const debug = require("debug")("pomelo-core:connection");
 
@@ -44,10 +46,17 @@ export interface _ISocksConnectionOptions {
 }
 export interface ISocksConnection {
   remoteAddress: string;
-  close(): Promise<boolean>;
+  isClosed: boolean;
+  close(): Promise<void>;
+  on(event: "close", listener: VoidFunction): this;
+  once(event: "close", listener: VoidFunction): this;
 }
 
-export class SocksConnection extends SocksBase {
+export class SocksConnection extends SocksBase implements ISocksConnection {
+  public get isClosed() {
+    return this._isClosed;
+  }
+
   private get _socket() {
     return this._options.socket;
   }
@@ -57,7 +66,6 @@ export class SocksConnection extends SocksBase {
   }
 
   public remoteAddress: string;
-  public isClosed: boolean = false;
 
   private _options: ISocksConnectionOptions;
   private _decoder: ISocksDecoder;
@@ -65,6 +73,7 @@ export class SocksConnection extends SocksBase {
   private _PacketClass: ISocksPacketClass[] = [SocksHandshakeRequest];
   private _timer: NodeJS.Timeout;
   private _lastActiveTime: number = Date.now();
+  private _isClosed: boolean = false;
   constructor(options: _ISocksConnectionOptions) {
     super(options);
 
@@ -96,7 +105,7 @@ export class SocksConnection extends SocksBase {
             this.remoteAddress,
             this._options.maxIdleTime,
           );
-          this.close();
+          this._closeSocket();
         }
       },
       this._options.maxIdleTime,
@@ -105,31 +114,43 @@ export class SocksConnection extends SocksBase {
     this.ready(true);
   }
 
-  public close(err?: any) {
-    if (this.isClosed) {
-      return Promise.resolve();
+  public async close() {
+    if (this._isClosed) {
+      return;
     }
-
-    this._removeInternalSocketHandlers();
-    this._socket.destroy(err);
-    return this.await("close");
+    this._closeSocket();
+    await this.await(this._socket, "close");
+    this.emit("close");
+    this.removeAllListeners();
   }
 
-  private _removeInternalSocketHandlers() {
-    this._encoder.unpipe(this._socket);
-    this._socket.unpipe(this._decoder);
-    [this._encoder, this._decoder].forEach((d) => {
-      d.once("unpipe", () => {
-        d.destroy();
-      });
-    });
+  private _closeSocket(err?: any) {
+    if (this._isClosed) {
+      return;
+    }
+    this._isClosed = true;
+    clearInterval(this._timer);
+
+    this._socket.destroy(err);
+    this._encoder.destroy();
+    this._decoder.destroy();
+    this._removeInternalHandlers();
+
+    this._socket.removeListener("error", this._handleSocketError);
+    this._socket.removeListener("close", this._handleSocketClose);
+    if (err) {
+      this.emit("error", new SocksError(err));
+    }
+  }
+
+  private _removeInternalHandlers() {
+    debug("removeInternalSocketHandlers");
+    unpump(this._encoder, this._socket, this._decoder);
   }
 
   private _handleSocketClose = () => {
     debug("handleSocketClose, start,");
-    this.isClosed = true;
-    clearInterval(this._timer);
-    this.emit("close");
+    this._closeSocket();
   }
 
   private _handleSocketError = (error: any) => {
@@ -188,7 +209,7 @@ export class SocksConnection extends SocksBase {
     this._sendSocksConnect(data, ESocksReply.SUCCEEDED);
     this.emit("connection", this._socket);
     // remove
-    this._removeInternalSocketHandlers();
+    this._removeInternalHandlers();
     this._createProxy(data);
   }
 
@@ -207,7 +228,7 @@ export class SocksConnection extends SocksBase {
 
     if (method === ESocksMethods.NO_ACCEPT) {
       // TODO: no-accept error msg
-      this.close();
+      this._closeSocket();
     }
   }
 
@@ -220,7 +241,7 @@ export class SocksConnection extends SocksBase {
 
     if (!isValid) {
       // TODO: invalid error msg
-      this.close();
+      this._closeSocket();
     }
   }
 

@@ -22,6 +22,7 @@ export class SocksDecoder extends Writable {
   private _PacketClasses: ISocksPacketClass[];
   private _index: number = 0;
   private _groupMode: boolean;
+  private _isDestroy: boolean = false;
   constructor(options: ISocksDecoderOptions) {
     super(options);
 
@@ -47,7 +48,7 @@ export class SocksDecoder extends Writable {
     encoding: string,
     callback: (error?: Error | null) => void,
   ) {
-    debug("write, start, chunk: %o", chunk);
+    debug("write, start, chunk: %o, activePacketClass: %s", chunk, this._activePacketClass && this._activePacketClass.name);
     this._buf = this._buf ? Buffer.concat([this._buf, chunk]) : chunk;
 
     try {
@@ -70,6 +71,10 @@ export class SocksDecoder extends Writable {
   }
 
   public destroy() {
+    if (this._isDestroy) {
+      return;
+    }
+    this._isDestroy = true;
     super.destroy();
     debug("destroy");
     this._buf = null;

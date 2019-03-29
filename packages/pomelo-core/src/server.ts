@@ -39,6 +39,7 @@ export class SocksServer extends SocksBase {
     }
     await Promise.all(closeTasks);
     this.emit("close");
+    this.removeAllListeners();
   }
 
   public async start() {
@@ -95,11 +96,11 @@ export class SocksServer extends SocksBase {
     server.once("error", (err) => { this.emit("error", err); });
     server.on("connection", this._handleConnection);
     server.listen(port, () => {
-      const realPort = (server.address() as net.AddressInfo).port;
+      const { port: realPort  } = server.address() as net.AddressInfo;
       if (port === this._publishPort && port === 0) {
         this._publishPort = realPort;
       }
-      console.log("[pomelo-core:server] server start on %s", realPort);
+      console.log("[pomelo-core:server] server is running on %s", realPort);
     });
     return server;
   }

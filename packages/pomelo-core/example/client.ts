@@ -5,7 +5,7 @@ SocksClient.createConnection(
   command: "connect",
   destination: {
     address: "www.baidu.com",
-    port: 90,
+    port: 80,
   },
   proxy: {
     host: "127.0.0.1",
@@ -19,6 +19,11 @@ SocksClient.createConnection(
   if (err) {
     return;
   }
-  console.log(info);
+  const { socket } = info;
+  socket.resume();
+  socket.on("data", (data: any) => {
+    console.log(data.toString());
+  });
+  socket.write("GET /json HTTP/1.1\nHost: www.baidu.com\n\n");
 });
 

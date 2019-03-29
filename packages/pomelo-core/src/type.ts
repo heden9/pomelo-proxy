@@ -1,4 +1,4 @@
-export class SocksClientError extends Error {
+export class SocksError extends Error {
   constructor(message: string) {
     super(message);
   }
