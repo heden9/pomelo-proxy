@@ -40,8 +40,9 @@ describe("encoder.test.ts", () => {
         done();
       });
     });
-    after((done) => {
-      server.close(done);
+    after(() => {
+      server.close();
+      // FIXME: wait for close
     });
     it("should process drain ok", (done) => {
       const socket = net.connect(port, "127.0.0.1");
