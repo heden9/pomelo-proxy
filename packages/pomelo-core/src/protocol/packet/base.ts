@@ -139,9 +139,9 @@ export class SocksV5PacketBase<T extends ISocksBaseOptions = ISocksBaseOptions> 
 
       // 尝试读取元素的size
       const size = sizeMap.get(model.key);
-      const val: TBufferVal = size
-        ? this._readBufferBatch(readBuffer, size, model)
-        : readBuffer();
+      const val: TBufferVal = size === undefined
+        ? readBuffer()
+        : this._readBufferBatch(readBuffer, size, model);
       // 校验
       this._validateBufferVal(val, model, !!model.for);
       // 如果使用了for，则记为指定元素的长度

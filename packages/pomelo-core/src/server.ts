@@ -28,6 +28,7 @@ export class SocksServer extends SocksBase {
   }
 
   public async close() {
+    debug("close, connections: %o", Array.from(this._connections.values()).map((c) => c.remoteAddress));
     // 1. 关闭 tcp server
     for (const server of this._servers) {
       server.close();
@@ -35,11 +36,13 @@ export class SocksServer extends SocksBase {
     // 2. 强制关闭连接
     const closeTasks = [];
     for (const connection of this._connections.values()) {
+      debug("close loop, instance[%s]", connection.remoteAddress);
       closeTasks.push(connection.close());
     }
     await Promise.all(closeTasks);
     this.emit("close");
     this.removeAllListeners();
+    debug("close finished");
   }
 
   public async start() {
@@ -80,12 +83,18 @@ export class SocksServer extends SocksBase {
   private _handleConnection = async (socket: net.Socket) => {
     const { port, address } = (socket.address() as net.AddressInfo);
     debug("handleConnection, serverInstance[%s:%s]", address, port);
+
     const connection = new SocksConnection({ socket, authenticate: this._options.authenticate });
-    debug("handleConnection, create instance[%s]", connection.remoteAddress);
+    connection.once("close", () => {
+      this._connections.delete(connection.remoteAddress);
+    });
     this._connections.set(connection.remoteAddress, connection);
+    debug("handleConnection, create instance[%s]", connection.remoteAddress);
+
     try {
       await connection.awaitFirst(["connection", "error"]);
     } catch (ex) {
+      console.log(ex);
       // TODO: log error
     }
     debug("handleConnection, %s connect success!", connection.remoteAddress);

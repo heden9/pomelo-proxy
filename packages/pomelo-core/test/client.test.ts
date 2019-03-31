@@ -1,17 +1,16 @@
-import { describe } from "mocha";
+
 import * as assert from "power-assert";
 import { ISocksClientEstablishedEvent, SocksClient, SocksServer } from "../src";
 import { ESocksVersion } from "../src/protocol/packet";
 import { selectPort } from "./fixtures/helper";
 
-import awaitEvent from "await-event";
 
 describe("client.test.ts", () => {
   async function proxyOk({ instance, socket }: ISocksClientEstablishedEvent) {
     socket.resume();
     socket.write("GET /json HTTP/1.1\nHost: www.alipay.com\n\n");
     assert.ok(instance instanceof SocksClient);
-    const data = await awaitEvent(socket, "data");
+    const data = await instance.await(socket, "data");
     assert.ok(data.toString().indexOf("Content-Type: text/html") !== -1);
     await instance.close();
   }
@@ -93,6 +92,81 @@ describe("client.test.ts", () => {
         },
       });
       await proxyOk({ instance, socket });
+    });
+
+    it("should ready when established", async () => {
+      const client = new SocksClient({
+        command: "connect",
+        destination: {
+          address: "www.alipay.com",
+          port: 80,
+        },
+        proxy: {
+          password: "hd",
+          port,
+          type: ESocksVersion.v5,
+          userName: "hd",
+        },
+      });
+      client.connect();
+      await client.ready();
+      assert.ok(client.isEstablished);
+      assert.ok(!client.isClosed);
+      await client.close();
+    });
+
+    it("establish fail without userName/password", async () => {
+      const client = new SocksClient({
+        command: "connect",
+        destination: {
+          address: "www.alipay.com",
+          port: 80,
+        },
+        proxy: {
+          port,
+          type: ESocksVersion.v5,
+        },
+      });
+      client.connect();
+      try {
+        await client.ready();
+        assert.ok(false);
+      } catch (ex) {
+        assert.equal(ex.name, "SOCKS_CONNECTION_REJECTED");
+        assert.equal(ex.message, "UNASSIGNED");
+      }
+      assert.ok(client.isClosed);
+      assert.ok(!client.isEstablished);
+    });
+
+    it("close after established", async () => {
+      const client = new SocksClient({
+        command: "connect",
+        destination: {
+          address: "www.alipay.com",
+          port: 80,
+        },
+        proxy: {
+          password: "hd",
+          port,
+          type: ESocksVersion.v5,
+          userName: "hd",
+        },
+      });
+      const promise = client.await("error");
+      client.connect();
+      await client.ready();
+      assert.ok(client.isEstablished);
+      assert.ok(!client.isClosed);
+      await server.close();
+      try {
+        await promise;
+        assert.ok(false);
+      } catch  (ex) {
+        assert.equal(ex.name, "SOCKET_CLOSED");
+      }
+      assert.ok(client.isClosed);
+      assert.ok(client.isEstablished);
     });
   });
 });

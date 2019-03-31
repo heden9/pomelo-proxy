@@ -47,12 +47,12 @@ export class SocksAuthRequest extends SocksV5PacketBase<ISocksAuthRequestOptions
       return 0;
     }
     const userNameLen = this._buffer[1];
-    if (!userNameLen) {
+    if (userNameLen === undefined) {
       return 0;
     }
     const passwordIndex = 2 + userNameLen;
     const passwordLen = this._buffer[passwordIndex];
-    if (!passwordLen) {
+    if (passwordLen === undefined) {
       return 0;
     }
     return 2 + userNameLen + 1 + passwordLen;

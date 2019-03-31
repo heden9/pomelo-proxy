@@ -74,6 +74,7 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
   private _timer: NodeJS.Timeout;
   private _lastActiveTime: number = Date.now();
   private _isClosed: boolean = false;
+  private _destination: net.Socket | null = null;
   constructor(options: _ISocksConnectionOptions) {
     super(options);
 
@@ -83,9 +84,7 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
       ...options,
     };
 
-    this.remoteAddress = `${this._socket.remoteAddress}:${
-      this._socket.remotePort
-    }`;
+    this.remoteAddress = `${this._socket.remoteAddress}:${this._socket.remotePort}`;
 
     this._decoder = this._protocol.decoder({
       PacketClass: this._PacketClass,
@@ -115,6 +114,7 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
   }
 
   public async close() {
+    debug("close");
     if (this._isClosed) {
       return;
     }
@@ -125,6 +125,7 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
   }
 
   private _closeSocket(err?: any) {
+    debug("closeSocket");
     if (this._isClosed) {
       return;
     }
@@ -134,6 +135,11 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
     this._socket.destroy(err);
     this._encoder.destroy();
     this._decoder.destroy();
+
+    if (this._destination) {
+      this._destination.destroy();
+    }
+
     this._removeInternalHandlers();
 
     this._socket.removeListener("error", this._handleSocketError);
@@ -200,6 +206,7 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
       debug("createProxy, start, success!");
       pump(destination, this._socket, destination);
     });
+    this._destination = destination;
   }
 
   private _handleSocksConnect(data: ISocksConnectRequestOptions) {

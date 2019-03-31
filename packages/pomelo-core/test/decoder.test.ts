@@ -1,10 +1,10 @@
+import awaitEvent from "await-event";
 import * as assert from "power-assert";
 import pump from "pump";
 import * as protocol from "../src/protocol";
 import { EPacketType, SocksAuthRequest } from "../src/protocol/packet";
 import { SOCKS_AUTH_REQ } from "./fixtures/config";
 
-import awaitEvent from "await-event";
 
 describe("decoder.test.ts", () => {
   const authReq = SOCKS_AUTH_REQ.BASIC.json;
