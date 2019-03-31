@@ -4,7 +4,8 @@ import { ISocksClientEstablishedEvent, SocksClient, SocksServer } from "../src";
 import { ESocksVersion } from "../src/protocol/packet";
 import { selectPort } from "./fixtures/helper";
 
-const awaitEvent = require("await-event");
+import awaitEvent from "await-event";
+
 describe("client.test.ts", () => {
   async function proxyOk({ instance, socket }: ISocksClientEstablishedEvent) {
     socket.resume();

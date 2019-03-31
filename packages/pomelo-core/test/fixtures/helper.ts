@@ -5,7 +5,7 @@ import { PassThrough } from "stream";
 import * as protocol from "../../src/protocol";
 import { ITestConfig } from "./config";
 
-const awaitEvent = require("await-event");
+import awaitEvent from "await-event";
 
 export function assertByKey(source: any, target: any) {
   Object.keys(source).forEach((key) => {

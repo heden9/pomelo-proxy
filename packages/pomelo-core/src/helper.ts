@@ -1,6 +1,6 @@
 import { Duplex } from "stream";
 
-const awaitEvent = require("await-event");
+import awaitEvent from "await-event";
 
 export function unpump(stream1: NodeJS.ReadableStream, stream2: Duplex, stream3: NodeJS.WritableStream) {
   stream1.unpipe(stream2);
