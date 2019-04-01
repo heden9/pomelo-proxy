@@ -57,10 +57,10 @@ interface ISocksClient {
   isEstablished: boolean;
   connect(existingSocket?: Socket): void;
   close(): Promise<void>;
-  on(event: "connect" | "close", listener: VoidFunction): this;
+  on(event: "close", listener: VoidFunction): this;
   on(event: "established", listener: (info: ISocksClientEstablishedEvent) => void): this;
 
-  once(event: "connect" | "close", listener: VoidFunction): this;
+  once(event: "close", listener: VoidFunction): this;
   once(event: "established", listener: (info: ISocksClientEstablishedEvent) => void): this;
 }
 
@@ -161,33 +161,27 @@ export class SocksClient extends SocksBase implements ISocksClient {
       this._socket.setNoDelay(this._options.setNoDelay);
       // setTimeout
       this._socket.setTimeout(this._options.timeout, () => {
-        const err = new SocksError(ERRORS.SOCKET_CONNECT_TIMEOUT, `connect timeout(${this._options.timeout}ms)`);
-        this.ready(err);
+        this.close(ERRORS.SOCKET_CONNECT_TIMEOUT, `connect timeout(${this._options.timeout}ms)`);
       });
     }
   }
 
-  public async close() {
+  public close(err?: Error, force?: boolean): Promise<void>;
+  public close(err?: string, message?: string | boolean, force?: boolean): Promise<void>;
+  public async close(err?: Error | string, messageOrForce?: string | boolean, force?: boolean) {
+    debug("close");
     if (this._isClosed) {
       return;
     }
-    this._closeSocket();
-    await this.await(this._socket, "close");
-    this.emit("close");
-    this.removeAllListeners();
-  }
 
-  private _removeInternalHandlers() {
-    debug("removeInternalSocketHandlers");
-    unpump(this._encoder, this._socket, this._decoder);
-  }
-
-  private _closeSocket(err?: Error): void;
-  private _closeSocket(err: string, message?: string): void;
-  private _closeSocket(err?: Error | string, message?: string) {
-    if (this._isClosed) {
-      return;
+    if (typeof messageOrForce === "boolean") {
+      force = messageOrForce;
+      messageOrForce = "";
     }
+    if (typeof err === "string") {
+      err = new SocksError(err, messageOrForce);
+    }
+
     this._isClosed = true;
 
     // Destroy Socket
@@ -203,9 +197,6 @@ export class SocksClient extends SocksBase implements ISocksClient {
     this._socket.removeListener("connect", this._onConnect);
     // Fire 'error' event.
     if (err) {
-      if (typeof err === "string") {
-        err = new SocksError(err, message);
-      }
       // emit error after established
       if (this._isEstablished) {
         this.emit("error", err);
@@ -214,6 +205,17 @@ export class SocksClient extends SocksBase implements ISocksClient {
       }
       debug("closeSocket, err[%s:%s]", err.name, err.message);
     }
+
+    if (!force) {
+      await this.await(this._socket, "close");
+    }
+    this.emit("close");
+    this.removeAllListeners();
+  }
+
+  private _removeInternalHandlers() {
+    debug("removeInternalSocketHandlers");
+    unpump(this._encoder, this._socket, this._decoder);
   }
 
   private _sendSocks5Handshake() {
@@ -261,7 +263,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
         this._sendSocksAuth(data);
         break;
       default:
-        this._closeSocket(ERRORS.SOCKS_UNKNOWN_AUTH_TYPE);
+        this.close(ERRORS.SOCKS_UNKNOWN_AUTH_TYPE);
         break;
     }
   }
@@ -269,7 +271,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
   private _handleSocksConnect(data: ISocksConnectResponseJsonModel) {
     debug("handleSocksConnect, start, data: %o", data);
     if (data.reply !== ESocksReply.SUCCEEDED) {
-      this._closeSocket(
+      this.close(
         ERRORS.SOCKS_CONNECTION_REJECTED,
         ESocksReply[data.reply],
       );
@@ -289,8 +291,8 @@ export class SocksClient extends SocksBase implements ISocksClient {
   private _handleSocksAuth(data: ISocksAuthResponseOptions) {
     debug("handleSocksAuth, start, data: %o", data);
     if (data.status !== ESocksAuthStatus.SUCCEEDED) {
-      this._closeSocket(
-        ERRORS.SOCKS_CONNECTION_REJECTED,
+      this.close(
+        ERRORS.SOCKS_AUTH_REJECTED,
         ESocksAuthStatus[data.status],
       );
       return;
@@ -317,16 +319,17 @@ export class SocksClient extends SocksBase implements ISocksClient {
 
   private _onClose = () => {
     debug("onClose");
-    this._closeSocket(ERRORS.SOCKET_CLOSED);
+    this.close(ERRORS.SOCKET_CLOSED, true);
   }
 
   private _onError = (err: Error) => {
     debug("onError");
-    this._closeSocket(err);
+    this.close(err);
   }
 
   private _onConnect = () => {
     debug("onConnect");
+    this._socket.setTimeout(0);
     switch (this._options.proxy.type) {
       case ESocksVersion.v5:
         this._sendSocks5Handshake();

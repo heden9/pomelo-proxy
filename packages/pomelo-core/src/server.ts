@@ -6,16 +6,20 @@ import { ISocksConnection, SocksConnection, TAuthenticate } from "./connection";
 const debug = require("debug")("pomelo-core:server");
 export interface ISocksServerOptions {
   port: number;
-  killTimeout: number;
+  killTimeout?: number;
   authenticate?: TAuthenticate;
 }
 
 export class SocksServer extends SocksBase {
-  get listenPorts() {
+  public get listenPorts() {
     return [ this._publishPort ];
   }
 
-  private _options: ISocksServerOptions;
+  private _options: {
+    port: number;
+    killTimeout: number;
+    authenticate?: TAuthenticate;
+  };
   private _connections: Map<string, ISocksConnection> = new Map();
   private _publishPort: number = 0;
   private _servers: net.Server[] = [];
@@ -23,7 +27,10 @@ export class SocksServer extends SocksBase {
   constructor(options: ISocksServerOptions) {
     super(options);
 
-    this._options = options;
+    this._options = {
+      killTimeout: 3000,
+      ...options,
+    };
     this._publishPort = options.port;
   }
 
@@ -76,8 +83,9 @@ export class SocksServer extends SocksBase {
     return this.ready();
   }
 
-  private _handleUncaughtError = (ex: any) => {
-    debug("handleUncaughtError", ex);
+  private _handleUncaughtError = (ex: Error) => {
+    console.warn("[pomelo-core:server] server is down, cause by uncaughtException in this process %s", process.pid);
+    console.warn("[pomelo-core:server] uncaughtException [%s:%s]", ex.name, ex.message || "unknown");
   }
 
   private _handleConnection = async (socket: net.Socket) => {
@@ -86,18 +94,17 @@ export class SocksServer extends SocksBase {
 
     const connection = new SocksConnection({ socket, authenticate: this._options.authenticate });
     connection.once("close", () => {
+      debug("connection close");
       this._connections.delete(connection.remoteAddress);
     });
-    this._connections.set(connection.remoteAddress, connection);
-    debug("handleConnection, create instance[%s]", connection.remoteAddress);
-
     try {
-      await connection.awaitFirst(["connection", "error"]);
+      await connection.awaitFirst(["established", "error"]);
+      this._connections.set(connection.remoteAddress, connection);
+      debug("handleConnection, create instance[%s]", connection.remoteAddress);
     } catch (ex) {
       console.log(ex);
       // TODO: log error
     }
-    debug("handleConnection, %s connect success!", connection.remoteAddress);
   }
 
   private _createServer(port: number) {

@@ -6,6 +6,7 @@ import * as protocol from "../../src/protocol";
 import { ITestConfig } from "./config";
 
 import awaitEvent from "await-event";
+import { ISocksClientEstablishedEvent, SocksClient } from "../../src";
 
 export function assertByKey(source: any, target: any) {
   Object.keys(source).forEach((key) => {
@@ -20,6 +21,15 @@ export function selectPort(): Promise<number> {
       server.close();
     });
   });
+}
+
+export async function proxyOk({ instance, socket }: ISocksClientEstablishedEvent) {
+  socket.resume();
+  socket.write("GET /json HTTP/1.1\nHost: www.alipay.com\n\n");
+  assert.ok(instance instanceof SocksClient);
+  const info = await instance.awaitFirst(socket, ["data", "error", "close"]);
+  assert.ok(info.args[0].toString().indexOf("Content-Type: text/html") !== -1);
+  await instance.close();
 }
 
 export class TestUtil {

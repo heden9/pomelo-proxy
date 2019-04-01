@@ -1,20 +1,11 @@
 
 import * as assert from "power-assert";
-import { ISocksClientEstablishedEvent, SocksClient, SocksServer } from "../src";
+import { SocksClient, SocksServer } from "../src";
 import { ESocksVersion } from "../src/protocol/packet";
-import { selectPort } from "./fixtures/helper";
+import { proxyOk, selectPort } from "./fixtures/helper";
 
 
 describe("client.test.ts", () => {
-  async function proxyOk({ instance, socket }: ISocksClientEstablishedEvent) {
-    socket.resume();
-    socket.write("GET /json HTTP/1.1\nHost: www.alipay.com\n\n");
-    assert.ok(instance instanceof SocksClient);
-    const data = await instance.await(socket, "data");
-    assert.ok(data.toString().indexOf("Content-Type: text/html") !== -1);
-    await instance.close();
-  }
-
   describe("no-auth server", () => {
     let server: SocksServer;
     let port: number;
@@ -132,7 +123,7 @@ describe("client.test.ts", () => {
         await client.ready();
         assert.ok(false);
       } catch (ex) {
-        assert.equal(ex.name, "SOCKS_CONNECTION_REJECTED");
+        assert.equal(ex.name, "SOCKS_AUTH_REJECTED");
         assert.equal(ex.message, "UNASSIGNED");
       }
       assert.ok(client.isClosed);
