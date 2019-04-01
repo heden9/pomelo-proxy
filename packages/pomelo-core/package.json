@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "await-event": "^2.1.0",
+    "core-decorators": "^0.20.0",
     "debug": "^4.1.1",
     "graceful": "^1.0.2",
     "ip": "^1.1.5",

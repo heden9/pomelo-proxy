@@ -2,6 +2,7 @@ import graceful from "graceful";
 import * as net from "net";
 import { SocksBase } from "./base";
 import { ISocksConnection, SocksConnection, TAuthenticate } from "./connection";
+import { logClassDecorator } from "./helper";
 
 const debug = require("debug")("pomelo-core:server");
 export interface ISocksServerOptions {
@@ -10,6 +11,7 @@ export interface ISocksServerOptions {
   authenticate?: TAuthenticate;
 }
 
+@logClassDecorator(debug)
 export class SocksServer extends SocksBase {
   public get listenPorts() {
     return [ this._publishPort ];
@@ -53,7 +55,6 @@ export class SocksServer extends SocksBase {
   }
 
   public async start() {
-    debug("start, options: %o", this._options);
     if (!this._started) {
       this._started = true;
 

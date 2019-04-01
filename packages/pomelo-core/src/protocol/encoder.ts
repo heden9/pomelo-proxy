@@ -90,7 +90,6 @@ export class SocksEncoder extends Transform {
     options: TEncoderCreatePacketOptions,
     callback: IEncoderCallback = noop,
   ) {
-    debug("writePacket, start, options: %o", options);
     if (this._limited) {
       this._queue.push([options, callback]);
     } else {

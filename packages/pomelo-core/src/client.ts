@@ -1,7 +1,8 @@
+import { autobind } from "core-decorators";
 import { Socket } from "net";
 import pump from "pump";
 import { SocksBase } from "./base";
-import { unpump } from "./helper";
+import { logClassDecorator, unpump } from "./helper";
 import * as protocol from "./protocol";
 import { ISocksDecoder } from "./protocol/decoder";
 import { ISocksEncoder } from "./protocol/encoder";
@@ -64,6 +65,7 @@ interface ISocksClient {
   once(event: "established", listener: (info: ISocksClientEstablishedEvent) => void): this;
 }
 
+@logClassDecorator(debug)
 export class SocksClient extends SocksBase implements ISocksClient {
   public static async createConnection(
     options: ISocksClientOptions,
@@ -78,7 +80,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
     } catch (ex) {
       err = ex;
     }
-    debug("createConnection, %s info: %o", err ? `error: ${err.message}` : "success!", info);
+    debug("createConnection, %s", err ? `error: ${err.message}` : "success!");
     client.removeAllListeners();
     if (typeof callback === "function") {
       callback(err, info);
@@ -169,7 +171,6 @@ export class SocksClient extends SocksBase implements ISocksClient {
   public close(err?: Error, force?: boolean): Promise<void>;
   public close(err?: string, message?: string | boolean, force?: boolean): Promise<void>;
   public async close(err?: Error | string, messageOrForce?: string | boolean, force?: boolean) {
-    debug("close");
     if (this._isClosed) {
       return;
     }
@@ -214,7 +215,6 @@ export class SocksClient extends SocksBase implements ISocksClient {
   }
 
   private _removeInternalHandlers() {
-    debug("removeInternalSocketHandlers");
     unpump(this._encoder, this._socket, this._decoder);
   }
 
@@ -228,7 +228,6 @@ export class SocksClient extends SocksBase implements ISocksClient {
   }
 
   private _sendSocksConnect() {
-    debug("sendSocksConnect, start");
     this._encoder.writePacket({
       address: this._options.destination.address,
       command: ESocksCommand[this._options.command],
@@ -239,7 +238,6 @@ export class SocksClient extends SocksBase implements ISocksClient {
   }
 
   private _sendSocksAuth(data: ISocksBaseOptions) {
-    debug("sendSocksAuth, start");
     this._encoder.writePacket({
       password: this._options.proxy.password || "",
       type: EPacketType.AUTH_REQUEST,
@@ -249,7 +247,6 @@ export class SocksClient extends SocksBase implements ISocksClient {
   }
 
   private _handleSocksHandshake(data: ISocksHandshakeResponseOptions)  {
-    debug("handleSocksHandshake, start, data: %o", data);
     switch (data.method) {
       case ESocksMethods.NO_AUTH:
         // TODO: push check
@@ -269,7 +266,6 @@ export class SocksClient extends SocksBase implements ISocksClient {
   }
 
   private _handleSocksConnect(data: ISocksConnectResponseJsonModel) {
-    debug("handleSocksConnect, start, data: %o", data);
     if (data.reply !== ESocksReply.SUCCEEDED) {
       this.close(
         ERRORS.SOCKS_CONNECTION_REJECTED,
@@ -289,7 +285,6 @@ export class SocksClient extends SocksBase implements ISocksClient {
   }
 
   private _handleSocksAuth(data: ISocksAuthResponseOptions) {
-    debug("handleSocksAuth, start, data: %o", data);
     if (data.status !== ESocksAuthStatus.SUCCEEDED) {
       this.close(
         ERRORS.SOCKS_AUTH_REJECTED,
@@ -300,8 +295,8 @@ export class SocksClient extends SocksBase implements ISocksClient {
     this._sendSocksConnect();
   }
 
-  private _handleSocksResponse = (info: IDecodeEventInfo) => {
-    debug("handleSocksResponse, start, info: %o", info);
+  @autobind
+  private _handleSocksResponse(info: IDecodeEventInfo) {
     switch (info.type) {
       case EPacketType.CONNECT_RESPONSE:
         this._handleSocksConnect(info.data);
@@ -317,18 +312,18 @@ export class SocksClient extends SocksBase implements ISocksClient {
     }
   }
 
-  private _onClose = () => {
-    debug("onClose");
+  @autobind
+  private _onClose() {
     this.close(ERRORS.SOCKET_CLOSED, true);
   }
 
-  private _onError = (err: Error) => {
-    debug("onError");
+  @autobind
+  private _onError(err: Error) {
     this.close(err);
   }
 
-  private _onConnect = () => {
-    debug("onConnect");
+  @autobind
+  private _onConnect() {
     this._socket.setTimeout(0);
     switch (this._options.proxy.type) {
       case ESocksVersion.v5:

@@ -1,7 +1,8 @@
+import { autobind } from "core-decorators";
 import * as net from "net";
 import pump from "pump";
 import { SocksBase } from "./base";
-import { unpump } from "./helper";
+import { logClassDecorator, unpump } from "./helper";
 import * as protocol from "./protocol";
 import { ISocksDecoder } from "./protocol/decoder";
 import { ISocksEncoder } from "./protocol/encoder";
@@ -50,6 +51,7 @@ export interface ISocksConnection {
   once(event: "established", listener: (socket: net.Socket) => void): this;
 }
 
+@logClassDecorator(debug)
 export class SocksConnection extends SocksBase implements ISocksConnection {
   public get isClosed() {
     return this._isClosed;
@@ -126,8 +128,8 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
 
   public close(err?: Error, force?: boolean): Promise<void>;
   public close(err?: string, message?: string | boolean, force?: boolean): Promise<void>;
+
   public async close(err?: Error | string, messageOrForce?: string | boolean, force?: boolean) {
-    debug("close", this._isClosed);
     if (this._isClosed) {
       return;
     }
@@ -173,29 +175,10 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
   }
 
   private _removeInternalHandlers() {
-    debug("removeInternalSocketHandlers");
     unpump(this._encoder, this._socket, this._decoder);
   }
 
-  private _handleSocketClose = () => {
-    debug("handleSocketClose, start,");
-    this.close(ERRORS.SOCKET_CLOSED, `connection(${this.remoteAddress}) close`, true);
-  }
-
-  private _handleSocketError = (error: any) => {
-    debug("handleSocketError, start,");
-    if (error.code !== "ECONNRESET") {
-      console.warn(
-        "[pomelo-core:connection] error occured on socket: %s, errName: %s, errMsg: %s",
-        this.remoteAddress,
-        error.name,
-        error.message,
-      );
-    }
-  }
-
   private _sendSocksHandshake(data: ISocksBaseOptions, method: ESocksMethods) {
-    debug("sendSocksHandshake, start, data: %o, method: %s", data, method);
     this._encoder.writePacket({
       method,
       type: EPacketType.HANDSHAKE_RESPONSE,
@@ -204,7 +187,6 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
   }
 
   private _sendSocksAuth(data: ISocksBaseOptions, status: ESocksAuthStatus) {
-    debug("sendSocksAuth, start, data: %o, status: %s", data, status);
     this._encoder.writePacket({
       status,
       type: EPacketType.AUTH_RESPONSE,
@@ -213,7 +195,6 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
   }
 
   private _sendSocksConnect(data: ISocksConnectRequestOptions, reply: ESocksReply) {
-    debug("sendSocksConnect, start, data: %o, reply: %s", data, reply);
     this._encoder.writePacket({
       address: data.address,
       port: data.port,
@@ -224,7 +205,6 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
   }
 
   private _createProxy(data: ISocksConnectRequestOptions) {
-    debug("createProxy, start, data: %o", data);
     const destination = net.createConnection(data.port, data.address, () => {
       debug("createProxy, start, success!");
       destination.setTimeout(0);
@@ -240,7 +220,6 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
   }
 
   private _handleSocksConnect(data: ISocksConnectRequestOptions) {
-    debug("handleSocksConnect, data: %o", data);
     // TODO: handle logic
     // this.emit("request", data);
     this._sendSocksConnect(data, ESocksReply.SUCCEEDED);
@@ -254,7 +233,6 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
   }
 
   private _handleSocksHandshake(data: ISocksHandshakeRequestOptions) {
-    debug("handleSocksHandshake, data: %o", data);
     let method = ESocksMethods.NO_ACCEPT;
     if (this._options.authenticate && data.methods.indexOf(ESocksMethods.USER_PASS) !== -1) {
       method = ESocksMethods.USER_PASS;
@@ -272,7 +250,6 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
   }
 
   private async _handleSocksAuth(data: ISocksAuthRequestOptions) {
-    debug("handleSocksAuth, data: %o", data);
     const authenticate = this._options.authenticate as TAuthenticate;
     const isValid = await authenticate(data.userName, data.password, this._socket, () => {});
     const status = isValid ? ESocksAuthStatus.SUCCEEDED : ESocksAuthStatus.UNASSIGNED;
@@ -283,8 +260,8 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
     }
   }
 
-  private _handleSocksResponse = (info: IDecodeEventInfo) => {
-    debug("handleSocksResponse, start, info: %o", info);
+  @autobind
+  private _handleSocksResponse(info: IDecodeEventInfo) {
     this._lastActiveTime = Date.now();
     switch (info.type) {
       case EPacketType.CONNECT_REQUEST:
@@ -299,6 +276,24 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
       default:
         this.close(ERRORS.SOCKS_UNKNOWN_RES_TYPE, `info${JSON.stringify(info.data)}`);
         break;
+    }
+  }
+
+  @autobind
+  private _handleSocketClose() {
+    this.close(ERRORS.SOCKET_CLOSED, `connection(${this.remoteAddress}) close`, true);
+  }
+
+  @autobind
+  private _handleSocketError(error: any) {
+    debug("handleSocketError, start,");
+    if (error.code !== "ECONNRESET") {
+      console.warn(
+        "[pomelo-core:connection] error occured on socket: %s, errName: %s, errMsg: %s",
+        this.remoteAddress,
+        error.name,
+        error.message,
+      );
     }
   }
 }
