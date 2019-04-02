@@ -15,7 +15,6 @@
   "license": "ISC",
   "dependencies": {
     "debug": "^4.1.1",
-    "pomelo-core": "^1.0.0",
     "sdk-base": "^3.5.1"
   },
   "nyc": {
