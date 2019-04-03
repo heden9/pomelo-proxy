@@ -1,11 +1,7 @@
-import { autobind } from "core-decorators";
 import * as net from "net";
 import pump from "pump";
-import { SocksBase } from "./base";
-import { logClassDecorator, unpump } from "./helper";
-import * as protocol from "./protocol";
-import { ISocksDecoder } from "./protocol/decoder";
-import { ISocksEncoder } from "./protocol/encoder";
+import { ISocksConnectionBaseOptions, SocksConnectionBase } from "./base/connection";
+import { logClassDecorator } from "./helper";
 import {
   EPacketType,
   ESocksAuthStatus,
@@ -15,13 +11,12 @@ import {
   ISocksBaseOptions,
   ISocksConnectRequestOptions,
   ISocksHandshakeRequestOptions,
-  ISocksPacketClass,
   SocksAuthRequest,
   SocksConnectRequest,
   SocksHandshakeRequest,
 } from "./protocol/packet";
 import { IDecodeEventInfo, ISocksProtocol } from "./protocol/type";
-import { ERRORS, SocksError } from "./type";
+import { ERRORS } from "./type";
 
 const debug = require("debug")("pomelo-core:connection");
 
@@ -32,150 +27,57 @@ export type TAuthenticate = (
   callback: Function,
 ) => Promise<boolean> | boolean;
 
-export interface ISocksConnectionOptions {
-  socket: net.Socket;
+export interface ISocksConnectionOptions extends ISocksConnectionBaseOptions {
   connectTimeout?: number;
   protocol?: ISocksProtocol;
-  maxIdleTime?: number;
   authenticate?: TAuthenticate;
-}
-export interface ISocksConnection {
-  remoteAddress: string;
-  isClosed: boolean;
-  isEstablished: boolean;
-  close(): Promise<void>;
-  on(event: "close", listener: VoidFunction): this;
-  on(event: "established", listener: (socket: net.Socket) => void): this;
-
-  once(event: "close", listener: VoidFunction): this;
-  once(event: "established", listener: (socket: net.Socket) => void): this;
 }
 
 @logClassDecorator(debug)
-export class SocksConnection extends SocksBase implements ISocksConnection {
-  public get isClosed() {
-    return this._isClosed;
-  }
-
-  public get isEstablished() {
-    return this._isEstablished;
-  }
-
-  private get _socket() {
-    return this._options.socket;
-  }
-
-  private get _protocol() {
-    return this._options.protocol;
-  }
-
-  public remoteAddress: string;
-
-  private _options: {
-    socket: net.Socket;
-    protocol: ISocksProtocol;
-    maxIdleTime: number;
-    connectTimeout: number;
-    authenticate?: TAuthenticate;
-  };
-
-  private _decoder: ISocksDecoder;
-  private _encoder: ISocksEncoder;
-  private _PacketClass: ISocksPacketClass[] = [SocksHandshakeRequest];
-  private _timer: NodeJS.Timeout;
-  private _lastActiveTime: number = Date.now();
-  private _isClosed: boolean = false;
-  private _isEstablished: boolean = false;
+export class SocksConnection extends SocksConnectionBase<ISocksConnectionOptions> {
   private _destination: net.Socket | null = null;
-  constructor(options: ISocksConnectionOptions) {
-    super(options);
+  private _connectTimeout: number;
+  constructor(socket: net.Socket, options: ISocksConnectionOptions = {}) {
+    super(socket, options);
 
-    this._options = {
-      connectTimeout: 3000,
-      maxIdleTime: 30 * 1000,
-      protocol,
-      ...options,
-    };
-
-    this.remoteAddress = `${this._socket.remoteAddress}:${this._socket.remotePort}`;
-
-    this._decoder = this._protocol.decoder({
-      PacketClass: this._PacketClass,
-    });
-    this._encoder = this._protocol.encoder();
-    pump(this._encoder, this._socket, this._decoder);
-    this._socket.once("close", this._handleSocketClose);
-    this._socket.once("error", this._handleSocketError);
-    this._decoder.on("decode", this._handleSocksResponse);
-
-    this._timer = setInterval(
-      () => {
-        const now = Date.now();
-        if (now - this._lastActiveTime >= this._options.maxIdleTime) {
-          console.warn(
-            "[pomelo-core:connection] socket: %s is idle for %s(ms)",
-            this.remoteAddress,
-            this._options.maxIdleTime,
-          );
-          this.close(ERRORS.SOCKET_IDLE_TIMEOUT, `idle timeout(${this._options.maxIdleTime}ms)`);
-        }
-      },
-      this._options.maxIdleTime,
-    );
-
-    this.ready(true);
+    this._connectTimeout = options.connectTimeout || 3 * 1000;
+    this._PacketClass.push(SocksHandshakeRequest);
   }
 
-  public close(err?: Error, force?: boolean): Promise<void>;
-  public close(err?: string, message?: string | boolean, force?: boolean): Promise<void>;
-
-  public async close(err?: Error | string, messageOrForce?: string | boolean, force?: boolean) {
-    if (this._isClosed) {
-      return;
+  /**
+   * @abstract
+   * @param info
+   */
+  protected _handleResponse(info: IDecodeEventInfo) {
+    switch (info.type) {
+      case EPacketType.CONNECT_REQUEST:
+        this._handleSocksConnect(info.data);
+        break;
+      case EPacketType.HANDSHAKE_REQUEST:
+        this._handleSocksHandshake(info.data);
+        break;
+      case EPacketType.AUTH_REQUEST:
+        this._handleSocksAuth(info.data);
+        break;
+      default:
+        this.close(ERRORS.SOCKS_UNKNOWN_RES_TYPE, `info${JSON.stringify(info.data)}`);
+        break;
     }
+  }
 
-    if (typeof messageOrForce === "boolean") {
-      force = messageOrForce;
-      messageOrForce = "";
-    }
-    if (typeof err === "string") {
-      err = new SocksError(err, messageOrForce);
-    }
-
-    this._isClosed = true;
-    clearInterval(this._timer);
-
-    this._socket.destroy();
-    this._encoder.destroy();
-    this._decoder.destroy();
-
+  protected _beforeClose() {
     if (this._destination) {
       this._destination.destroy();
     }
-
-    this._removeInternalHandlers();
-
-    this._socket.removeListener("error", this._handleSocketError);
-    this._socket.removeListener("close", this._handleSocketClose);
-    if (err) {
-      // emit error after established
-      if (this._isEstablished) {
-        // this.emit("error", err);
-      } else {
-        this.ready(err);
-      }
-      debug("closeSocket, fin err[%s:%s]", err.name, err.message);
-    }
-
-    if (!force) {
-      await this.await(this._socket, "close");
-    }
-    this.emit("close");
-    this.removeAllListeners();
   }
 
-  private _removeInternalHandlers() {
-    unpump(this._encoder, this._socket, this._decoder);
+  protected _createProxy(data: ISocksConnectRequestOptions) {
+    const destination = net.createConnection(data.port, data.address, () => {
+      debug("createProxy, start, success!");
+      destination.setTimeout(0);
+      pump(destination, this._socket, destination);
+    });
+    return destination;
   }
 
   private _sendSocksHandshake(data: ISocksBaseOptions, method: ESocksMethods) {
@@ -204,21 +106,6 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
     });
   }
 
-  private _createProxy(data: ISocksConnectRequestOptions) {
-    const destination = net.createConnection(data.port, data.address, () => {
-      debug("createProxy, start, success!");
-      destination.setTimeout(0);
-      pump(destination, this._socket, destination);
-    });
-    destination.setTimeout(this._options.connectTimeout, () => {
-      debug("createProxy, timeout");
-      const err = new SocksError(ERRORS.SOCKET_CONNECT_TIMEOUT, `connect timeout(${this._options.connectTimeout}ms)`);
-      // destination.emit("error", err);
-      this.close(err);
-    });
-    this._destination = destination;
-  }
-
   private _handleSocksConnect(data: ISocksConnectRequestOptions) {
     // TODO: handle logic
     // this.emit("request", data);
@@ -229,7 +116,13 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
     this.emit("established", this._socket);
     // remove
     this._removeInternalHandlers();
-    this._createProxy(data);
+
+    this._destination = this._createProxy(data);
+    this._destination.setNoDelay(true);
+    this._destination.setTimeout(this._connectTimeout, () => {
+      debug("proxy, timeout");
+      this.close(ERRORS.SOCKET_CONNECT_TIMEOUT, `connect timeout(${this._connectTimeout}ms)`);
+    });
   }
 
   private _handleSocksHandshake(data: ISocksHandshakeRequestOptions) {
@@ -257,43 +150,6 @@ export class SocksConnection extends SocksBase implements ISocksConnection {
 
     if (!isValid) {
       this.close(ERRORS.SOCKS_AUTH_REJECTED, `invalid userName/password(${data.userName}:${data.password})`);
-    }
-  }
-
-  @autobind
-  private _handleSocksResponse(info: IDecodeEventInfo) {
-    this._lastActiveTime = Date.now();
-    switch (info.type) {
-      case EPacketType.CONNECT_REQUEST:
-        this._handleSocksConnect(info.data);
-        break;
-      case EPacketType.HANDSHAKE_REQUEST:
-        this._handleSocksHandshake(info.data);
-        break;
-      case EPacketType.AUTH_REQUEST:
-        this._handleSocksAuth(info.data);
-        break;
-      default:
-        this.close(ERRORS.SOCKS_UNKNOWN_RES_TYPE, `info${JSON.stringify(info.data)}`);
-        break;
-    }
-  }
-
-  @autobind
-  private _handleSocketClose() {
-    this.close(ERRORS.SOCKET_CLOSED, `connection(${this.remoteAddress}) close`, true);
-  }
-
-  @autobind
-  private _handleSocketError(error: any) {
-    debug("handleSocketError, start,");
-    if (error.code !== "ECONNRESET") {
-      console.warn(
-        "[pomelo-core:connection] error occured on socket: %s, errName: %s, errMsg: %s",
-        this.remoteAddress,
-        error.name,
-        error.message,
-      );
     }
   }
 }

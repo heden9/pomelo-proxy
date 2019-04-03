@@ -24,7 +24,7 @@ import {
  * @class SocksConnectBase
  * @extends {SocksV5PacketBase<ISocksConnectBaseModel>}
  */
-class SocksConnectBase extends SocksV5PacketBase<ISocksConnectBaseModel> {
+export class SocksConnectBase extends SocksV5PacketBase<ISocksConnectBaseModel> {
   public static models = [
     ...SocksV5PacketBase.models,
     createModel<ISocksConnectBaseModel>(

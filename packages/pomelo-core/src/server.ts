@@ -1,7 +1,9 @@
+import { autobind } from "core-decorators";
 import graceful from "graceful";
 import * as net from "net";
-import { SocksBase } from "./base";
-import { ISocksConnection, SocksConnection, TAuthenticate } from "./connection";
+import { SocksBase } from "./base/base";
+import { ISocksConnectionBase } from "./base/connection";
+import { SocksConnection, TAuthenticate } from "./connection";
 import { logClassDecorator } from "./helper";
 
 const debug = require("debug")("pomelo-core:server");
@@ -11,8 +13,14 @@ export interface ISocksServerOptions {
   authenticate?: TAuthenticate;
 }
 
+export interface ISocksServer {
+  listenPorts: number[];
+  close(): Promise<void>;
+  start(): Promise<void>;
+}
+
 @logClassDecorator(debug)
-export class SocksServer extends SocksBase {
+export class SocksServer extends SocksBase implements ISocksServer {
   public get listenPorts() {
     return [ this._publishPort ];
   }
@@ -22,7 +30,7 @@ export class SocksServer extends SocksBase {
     killTimeout: number;
     authenticate?: TAuthenticate;
   };
-  private _connections: Map<string, ISocksConnection> = new Map();
+  private _connections: Map<string, ISocksConnectionBase> = new Map();
   private _publishPort: number = 0;
   private _servers: net.Server[] = [];
   private _started = false;
@@ -84,16 +92,15 @@ export class SocksServer extends SocksBase {
     return this.ready();
   }
 
-  private _handleUncaughtError = (ex: Error) => {
-    console.warn("[pomelo-core:server] server is down, cause by uncaughtException in this process %s", process.pid);
-    console.warn("[pomelo-core:server] uncaughtException [%s:%s]", ex.name, ex.message || "unknown");
+  protected _createConnection(socket: net.Socket): ISocksConnectionBase {
+    return new SocksConnection(socket, { authenticate: this._options.authenticate });
   }
 
-  private _handleConnection = async (socket: net.Socket) => {
-    const { port, address } = (socket.address() as net.AddressInfo);
-    debug("handleConnection, serverInstance[%s:%s]", address, port);
-
-    const connection = new SocksConnection({ socket, authenticate: this._options.authenticate });
+  @autobind
+  protected async _handleConnection(socket: net.Socket) {
+    console.log("--------");
+    const connection = this._createConnection(socket);
+    debug("handleConnection, serverInstance[%s]", connection.remoteAddress);
     connection.once("close", () => {
       debug("connection close");
       this._connections.delete(connection.remoteAddress);
@@ -106,6 +113,12 @@ export class SocksServer extends SocksBase {
       console.log(ex);
       // TODO: log error
     }
+  }
+
+  @autobind
+  private _handleUncaughtError(ex: Error) {
+    console.warn("[pomelo-core:server] server is down, cause by uncaughtException in this process %s", process.pid);
+    console.warn("[pomelo-core:server] uncaughtException [%s:%s]", ex.name, ex.message || "unknown");
   }
 
   private _createServer(port: number) {

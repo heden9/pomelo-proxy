@@ -14,6 +14,7 @@ export interface ISocksDecoderOptions extends WritableOptions {
 export interface ISocksDecoder extends Writable {
   destroy(): void;
   on(event: "decode" | EPacketType, listener: (info: IDecodeEventInfo) => void): this;
+  on(event: "end", listener: (buf: Buffer) => void): this;
   on(event: string | symbol, listener: (...args: any[]) => void): this;
 }
 
@@ -58,7 +59,8 @@ export class SocksDecoder extends Writable {
 
         if (this.isDone) {
           debug("write, is done");
-          this.destroy();
+          // this.destroy();
+          this.emit("end", this._buf);
           break;
         }
         unfinished = this._decode();
@@ -116,16 +118,13 @@ export class SocksDecoder extends Writable {
     }
 
     const obj = packet.toJSON();
+    const isContinue = !!restLen;
+    this._buf = isContinue ? this._buf.slice(packetLength) : null;
+
     debug("decode, emit: %s, obj: %o", this._activePacketClass.displayName, obj);
     this.emit("decode", { data: obj, type: this._activePacketClass.displayName });
     this.emit(this._activePacketClass.displayName, obj);
-
     this._nextIndex();
-    if (restLen) {
-      this._buf = this._buf.slice(packetLength);
-      return true;
-    }
-    this._buf = null;
-    return false;
+    return isContinue;
   }
 }

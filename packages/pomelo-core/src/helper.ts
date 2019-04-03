@@ -1,15 +1,15 @@
-import { Duplex } from "stream";
+const { getOwnPropertyDescriptors, getOwnKeys } = require("core-decorators/lib/private/utils");
 
-const { getOwnPropertyDescriptors, getOwnKeys } = require('core-decorators/lib/private/utils');
-
-export function unpump(
-  stream1: NodeJS.ReadableStream,
-  stream2: Duplex,
-  stream3: NodeJS.WritableStream,
-) {
-  stream1.unpipe(stream2);
-  stream2.unpipe(stream3);
-}
+export const unpump = function(...streams: any[]) {
+  const _streams = streams.slice(1, streams.length);
+  _streams.reduce(
+    (current: NodeJS.ReadableStream, item: NodeJS.WritableStream) => {
+      current.unpipe(item);
+      return item;
+    },
+    streams[0],
+  );
+};
 
 export function logDecorator(log: Function) {
   return function(target: any, key: string, descriptor: PropertyDescriptor) {

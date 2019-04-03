@@ -1,7 +1,7 @@
 import { autobind } from "core-decorators";
 import { Socket } from "net";
 import pump from "pump";
-import { SocksBase } from "./base";
+import { SocksBase } from "./base/base";
 import { logClassDecorator, unpump } from "./helper";
 import * as protocol from "./protocol";
 import { ISocksDecoder } from "./protocol/decoder";
