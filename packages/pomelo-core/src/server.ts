@@ -1,10 +1,10 @@
 import { autobind } from "core-decorators";
 import graceful from "graceful";
 import * as net from "net";
+import { logClassDecorator } from "pomelo-util";
 import { SocksBase } from "./base/base";
 import { ISocksConnectionBase } from "./base/connection";
 import { SocksConnection, TAuthenticate } from "./connection";
-import { logClassDecorator } from "./helper";
 
 const debug = require("debug")("pomelo-core:server");
 export interface ISocksServerOptions {
@@ -98,7 +98,6 @@ export class SocksServer extends SocksBase implements ISocksServer {
 
   @autobind
   protected async _handleConnection(socket: net.Socket) {
-    console.log("--------");
     const connection = this._createConnection(socket);
     debug("handleConnection, serverInstance[%s]", connection.remoteAddress);
     connection.once("close", () => {
@@ -126,7 +125,7 @@ export class SocksServer extends SocksBase implements ISocksServer {
     server.once("error", (err) => { this.emit("error", err); });
     server.on("connection", this._handleConnection);
     server.listen(port, () => {
-      const { port: realPort  } = server.address() as net.AddressInfo;
+      const { port: realPort } = server.address() as net.AddressInfo;
       if (port === this._publishPort && port === 0) {
         this._publishPort = realPort;
       }

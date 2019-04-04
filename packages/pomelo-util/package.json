@@ -1,5 +1,5 @@
 {
-  "name": "pomelo",
+  "name": "pomelo-util",
   "version": "0.0.1",
   "description": "",
   "main": "build/index.js",
@@ -16,10 +16,9 @@
   "license": "ISC",
   "dependencies": {
     "debug": "^4.1.1",
-    "pomelo-core": "^0.1.0",
-    "pomelo-util": "^0.0.1",
     "pump": "^3.0.0",
-    "sdk-base": "^3.5.1"
+    "core-decorators": "^0.20.0",
+    "await-event": "^2.1.0"
   },
   "devDependencies": {
     "@types/empower": "^1.2.30",

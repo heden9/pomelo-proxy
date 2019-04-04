@@ -1,7 +1,7 @@
 import * as crypto from "crypto";
 import * as net from "net";
-
-import { ISocksServerOptions, logClassDecorator, SocksServer } from "pomelo-core";
+import { ISocksServerOptions, SocksServer } from "pomelo-core";
+import { logClassDecorator } from "pomelo-util";
 import { SSServerConnection } from "./ss-server-connection";
 
 const debug = require("debug")("pomelo:ss-server");

@@ -1,7 +1,7 @@
 import { autobind } from "core-decorators";
 import * as net from "net";
 import pump from "pump";
-import { unpump } from "../helper";
+import { unpump } from "pomelo-util";
 import * as protocol from "../protocol";
 import { ISocksDecoder } from "../protocol/decoder";
 import { ISocksEncoder } from "../protocol/encoder";
@@ -115,6 +115,7 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
       force = messageOrForce;
       messageOrForce = "";
     }
+
     if (typeof err === "string") {
       err = new SocksError(err, messageOrForce);
     }
@@ -126,12 +127,12 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
     this._encoder.destroy();
     this._decoder.destroy();
 
-    this._beforeClose();
-
     this._removeInternalHandlers();
-
     this._socket.removeListener("error", this._handleSocketError);
     this._socket.removeListener("close", this._handleSocketClose);
+
+    this._beforeClose();
+
     if (err) {
       // emit error after established
       if (this._isEstablished) {
@@ -153,7 +154,7 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
   protected _beforeClose() {}
 
   protected _removeInternalHandlers() {
-    unpump(this._encoder, this._socket, this._decoder);
+    unpump(...this._pipeline);
   }
 
   @autobind

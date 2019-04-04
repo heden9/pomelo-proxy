@@ -1,5 +1,12 @@
 import * as net from "net";
-import { ESocksAddressLength, ESocksAddressType, ISocksBaseOptions, SocksConnectBase, SocksV5PacketBase, WithBuffer } from "pomelo-core/build/protocol/packet";
+import {
+  ESocksAddressLength,
+  ESocksAddressType,
+  ISocksBaseOptions,
+  SocksConnectBase,
+  SocksV5PacketBase,
+  WithBuffer,
+} from "pomelo-core/build/protocol/packet";
 
 export interface ISSLocalRequestOptions extends ISocksBaseOptions {
   address: string;
@@ -55,7 +62,7 @@ export class SSLocalRequest extends SocksV5PacketBase<ISSLocalRequestModel> {
         break;
       default:
         return 0;
-      }
+    }
     return length + 2;
   }
 }

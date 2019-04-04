@@ -1,7 +1,8 @@
 import * as crypto from "crypto";
 import * as net from "net";
-import { ISocksConnectionOptions, logClassDecorator, SocksConnection } from "pomelo-core";
+import { ISocksConnectionOptions, SocksConnection } from "pomelo-core";
 import { ISocksConnectRequestOptions } from "pomelo-core/build/protocol/packet";
+import { logClassDecorator } from "pomelo-util";
 import pump from "pump";
 import { SSLocalRequest } from "./packet";
 
@@ -30,30 +31,24 @@ export class SSLocalConnection extends SocksConnection {
   }
 
   protected _createProxy(data: ISocksConnectRequestOptions) {
-    const remote = net.createConnection(this._remotePort, this._remoteHost, () => {
-      debug("remote start! [%s:%s]", this._remoteHost, this._remotePort);
-      remote.setTimeout(0);
-      // ss-handshake packet
-      const req = new SSLocalRequest({
-        address: data.address,
-        port: data.port,
-        version: data.version,
-      }).toBuffer();
+    const remote = net.createConnection(
+      this._remotePort,
+      this._remoteHost,
+      () => {
+        debug("remote start! [%s:%s]", this._remoteHost, this._remotePort);
+        remote.setTimeout(0);
+        // ss-handshake packet
+        const req = new SSLocalRequest({
+          address: data.address,
+          port: data.port,
+          version: data.version,
+        }).toBuffer();
 
-      pump(
-        this._cipher,
-        remote,
-        this._decipher,
-        this._socket,
-      );
+        this._cipher.write(req);
 
-      this._cipher.write(req);
-
-      pump(
-        this._socket,
-        this._cipher,
-      );
-    });
+        pump(this._socket, this._cipher, remote, this._decipher, this._socket);
+      },
+    );
     return remote;
   }
 }

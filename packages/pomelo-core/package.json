@@ -23,6 +23,7 @@
     "debug": "^4.1.1",
     "graceful": "^1.0.2",
     "ip": "^1.1.5",
+    "pomelo-util": "^0.0.1",
     "pump": "^3.0.0",
     "sdk-base": "^3.5.1",
     "smart-buffer": "^4.0.2"

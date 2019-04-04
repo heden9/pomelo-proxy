@@ -1,7 +1,7 @@
 import * as net from "net";
+import { logClassDecorator } from "pomelo-util";
 import pump from "pump";
 import { ISocksConnectionBaseOptions, SocksConnectionBase } from "./base/connection";
-import { logClassDecorator } from "./helper";
 import {
   EPacketType,
   ESocksAuthStatus,
@@ -15,7 +15,7 @@ import {
   SocksConnectRequest,
   SocksHandshakeRequest,
 } from "./protocol/packet";
-import { IDecodeEventInfo, ISocksProtocol } from "./protocol/type";
+import { IDecodeEventInfo } from "./protocol/type";
 import { ERRORS } from "./type";
 
 const debug = require("debug")("pomelo-core:connection");
@@ -29,7 +29,6 @@ export type TAuthenticate = (
 
 export interface ISocksConnectionOptions extends ISocksConnectionBaseOptions {
   connectTimeout?: number;
-  protocol?: ISocksProtocol;
   authenticate?: TAuthenticate;
 }
 

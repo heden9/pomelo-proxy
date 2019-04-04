@@ -1,8 +1,8 @@
 import { autobind } from "core-decorators";
 import { Socket } from "net";
+import { logClassDecorator, unpump } from "pomelo-util";
 import pump from "pump";
 import { SocksBase } from "./base/base";
-import { logClassDecorator, unpump } from "./helper";
 import * as protocol from "./protocol";
 import { ISocksDecoder } from "./protocol/decoder";
 import { ISocksEncoder } from "./protocol/encoder";

@@ -1,3 +1,4 @@
+import awaitEvent from "await-event";
 import * as net from "net";
 import * as assert from "power-assert";
 import pump from "pump";
@@ -5,7 +6,6 @@ import { PassThrough } from "stream";
 import * as protocol from "../../src/protocol";
 import { ITestConfig } from "./config";
 
-import awaitEvent from "await-event";
 import { ISocksClientEstablishedEvent, SocksClient } from "../../src";
 
 export function assertByKey(source: any, target: any) {

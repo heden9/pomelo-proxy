@@ -6,8 +6,7 @@ node_js:
   - 8
 install:
   - npm i -g cnpm
-  - cnpm i -g lerna
-  - lerna bootstrap
+  - cnpm i
 script:
   - npm run cov
 after_success:
