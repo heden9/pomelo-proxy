@@ -1,0 +1,27 @@
+{
+  "name": "pomelo-client",
+  "author": "禾登 <771854332@qq.com>",
+  "description": "",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-webpack dev",
+    "lint": "tslint ./src/* --fix",
+    "cov": "echo \"success\"",
+    "compile": "electron-webpack",
+    "dist": "yarn compile && electron-builder",
+    "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null"
+  },
+  "dependencies": {
+    "source-map-support": "^0.5.10"
+  },
+  "devDependencies": {
+    "electron": "4.0.1",
+    "electron-builder": "20.38.4",
+    "electron-webpack": "^2.6.2",
+    "electron-webpack-ts": "^3.1.1",
+    "tslint": "^5.15.0",
+    "typescript": "^3.4.2",
+    "webpack": "4.28.4"
+  }
+}
