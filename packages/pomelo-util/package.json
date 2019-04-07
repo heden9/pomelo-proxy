@@ -7,7 +7,8 @@
     "dev": "tsc -w",
     "lint": "tslint ./src/* --fix",
     "test": "mocha -r ts-node/register test/**/*.test.ts",
-    "cov": "nyc npm test && nyc report --reporter=text-lcov > coverage.lcov && codecov",
+    "cov": "echo \"skip\"",
+    "cov_": "nyc npm test && nyc report --reporter=text-lcov > coverage.lcov && codecov",
     "view": "open ./coverage/index.html",
     "build": "rm -rf build && tsc -d",
     "prepublish": "npm run build"

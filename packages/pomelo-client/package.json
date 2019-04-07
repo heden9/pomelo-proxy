@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "electron-webpack dev",
     "lint": "tslint ./src/* --fix",
-    "cov": "echo \"success\"",
+    "cov": "echo \"skip\"",
     "compile": "electron-webpack",
     "dist": "yarn compile && electron-builder",
     "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null"
