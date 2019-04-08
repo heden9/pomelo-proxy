@@ -60,6 +60,7 @@ export class SocksServer extends SocksBase implements ISocksServer {
     this.emit("close");
     this.removeAllListeners();
     debug("close finished");
+    console.log("[pomelo-core:server] server %o is exit", this._publishPort);
   }
 
   public async start() {

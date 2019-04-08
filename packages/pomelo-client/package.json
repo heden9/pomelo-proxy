@@ -13,6 +13,9 @@
     "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null"
   },
   "dependencies": {
+    "debug": "^4.1.1",
+    "pomelo": "^0.0.1",
+    "sdk-base": "^3.5.1",
     "source-map-support": "^0.5.10"
   },
   "devDependencies": {

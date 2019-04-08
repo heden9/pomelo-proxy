@@ -1,7 +1,7 @@
 import { autobind } from "core-decorators";
 import * as net from "net";
-import pump from "pump";
 import { unpump } from "pomelo-util";
+import pump from "pump";
 import * as protocol from "../protocol";
 import { ISocksDecoder } from "../protocol/decoder";
 import { ISocksEncoder } from "../protocol/encoder";
@@ -41,7 +41,7 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
     return protocol;
   }
 
-  protected get _pipeline() {
+  protected get _pipeline(): Parameters<typeof pump> {
     return [
       this._encoder,
       this._socket,
