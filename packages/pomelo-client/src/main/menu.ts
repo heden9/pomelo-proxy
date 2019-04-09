@@ -1,8 +1,9 @@
-import { Menu as ElectronMenu, MenuItemConstructorOptions } from "electron";
+import { Menu as ElectronMenu, MenuItem, MenuItemConstructorOptions } from "electron";
 import * as path from "path";
 import SDKBase from "sdk-base";
+import { EMode } from "./type";
 
-export class Menu extends SDKBase {
+export class MainMenu extends SDKBase {
   private _label: string = "pomelo-proxy";
   private _isOpen: boolean = false;
   private get _menu(): MenuItemConstructorOptions[] {
@@ -13,24 +14,20 @@ export class Menu extends SDKBase {
       },
       {
         label: `${this._isOpen ? "关闭" : "打开"} ${this._label}`,
-        click: this.switch,
+        click: this._switchStatus,
       },
       { type: "separator" },
       {
         label: "PAC自动模式",
         type: "radio",
-      },
-      {
-        label: "白名单模式",
-        type: "radio",
+        id: EMode.PAC,
+        click: this._switchMode,
       },
       {
         label: "全局模式",
         type: "radio",
-      },
-      {
-        label: "ACL模式",
-        submenu: [{ role: "minimize" }, { role: "close" }],
+        id: EMode.GLOBAL,
+        click: this._switchMode,
       },
       {
         label: "代理设置",
@@ -54,13 +51,17 @@ export class Menu extends SDKBase {
       : path.join(__static, "/pomelo.png");
   }
 
-  public switch = () => {
+  private _switchStatus = () => {
     this._isOpen = !this._isOpen;
-    this.emit("switch", this._isOpen);
+    this.emit("switch-status", this._isOpen);
     if (this._isOpen) {
       this.emit("ready");
     } else {
       this.emit("close");
     }
+  }
+
+  private _switchMode = (item: MenuItem) => {
+    this.emit("switch-mode", (item as any).id);
   }
 }

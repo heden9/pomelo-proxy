@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const debug = require('debug')('pomelo-client:start-local');
+const options = JSON.parse(process.argv[2]);
+debug('start local options: %j', options);
+const { SSLocal } = require('pomelo');
+
+new SSLocal(options).start();

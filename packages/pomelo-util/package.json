@@ -16,10 +16,10 @@
   "author": "禾登 <771854332@qq.com>",
   "license": "ISC",
   "dependencies": {
-    "debug": "^4.1.1",
-    "pump": "^3.0.0",
+    "await-event": "^2.1.0",
     "core-decorators": "^0.20.0",
-    "await-event": "^2.1.0"
+    "debug": "^4.1.1",
+    "pump": "^3.0.0"
   },
   "devDependencies": {
     "@types/empower": "^1.2.30",
