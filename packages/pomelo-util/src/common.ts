@@ -1,6 +1,7 @@
 const { getOwnPropertyDescriptors, getOwnKeys } = require("core-decorators/lib/private/utils");
 
-export const unpump = function(...streams: any[]) {
+type AnyFunction = (...args: any[]) => any;
+export const unpump = (...streams: any[]) => {
   const _streams = streams.slice(1, streams.length);
   _streams.reduce(
     (current: NodeJS.ReadableStream, item: NodeJS.WritableStream) => {
@@ -11,14 +12,15 @@ export const unpump = function(...streams: any[]) {
   );
 };
 
-export function logDecorator(log: Function) {
-  return function(target: any, key: string, descriptor: PropertyDescriptor) {
+export function logDecorator(log: AnyFunction) {
+  return (target: any, key: string, descriptor: PropertyDescriptor) => {
     if (!descriptor) {
       return descriptor;
     }
     const func = descriptor.value;
     descriptor.value = function wrapper(...args: any[]) {
       log(`#${key} called with %o`, args);
+      // tslint:disable-next-line:no-invalid-this
       const result = func.call(this, ...args);
       if (result instanceof Promise) {
         return result.then((d) => log(`#${key} returns %o`, d));
@@ -30,8 +32,8 @@ export function logDecorator(log: Function) {
   };
 }
 
-export function logClassDecorator(log: Function) {
-  return function(target: any) {
+export function logClassDecorator(log: AnyFunction) {
+  return (target: any) => {
     const descs = getOwnPropertyDescriptors(target.prototype);
     const keys = getOwnKeys(descs);
 

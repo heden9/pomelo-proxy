@@ -3,6 +3,7 @@ import { Transform, TransformCallback, TransformOptions } from "stream";
 import { ERRORS } from "./constant";
 import { noop, ProtocolError } from "./helper";
 import {
+  EPacketType,
   ISocksPacket,
   SocksAuthRequest,
   SocksAuthResponse,
@@ -10,16 +11,13 @@ import {
   SocksConnectResponse,
   SocksHandshakeRequest,
   SocksHandshakeResponse,
-} from "./packet";
-import {
-  EPacketType,
   TSocksAuthRequestOptionsOrBuffer,
   TSocksAuthResponseOptionsOrBuffer,
   TSocksConnectRequestOptionsOrBuffer,
   TSocksConnectResponseOptionsOrBuffer,
   TSocksHandshakeRequestOptionsOrBuffer,
   TSocksHandshakeResponseOptionsOrBuffer,
-} from "./packet/type";
+} from "./packet";
 import {
   IEncoderCallback,
   TEncoderCreatePacketOptions,
@@ -33,6 +31,7 @@ export interface ISocksEncoder extends Transform {
   ): void;
 }
 
+// tslint:disable-next-line:no-empty-interface
 export interface ISocksEncoderOptions extends TransformOptions {}
 
 const debug = require("debug")("pomelo-core:encoder");

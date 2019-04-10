@@ -29,9 +29,9 @@
             }
         ],
         "no-empty-interface":true,// 不允许空接口
-        "no-parameter-reassignment":true,// 不允许修改方法输入参数
+        "no-parameter-reassignment":false,// 不允许修改方法输入参数
         "prefer-for-of":true,// 如果for循环中没有使用索引，建议是使用for-of
-
+        "no-var-requires": false,
         // 功能特性
         "await-promise":true,// 不允许没有Promise的情况下使用await
         "curly":true,// if/for/do/while强制使用大括号
@@ -55,7 +55,7 @@
         "no-unused-expression":true,// 不允许使用未使用的表达式
         "no-use-before-declare":true,// 在使用前必须声明
         "no-var-keyword":true,// 不允许使用var
-        "radix":true,// parseInt时，必须输入radix精度参数
+        "radix":false,// parseInt时，必须输入radix精度参数
         "restrict-plus-operands":true,// 不允许自动类型转换，如果已设置不允许使用关键字var该设置无效
         "triple-equals":true,// 必须使用恒等号，进行等于比较
         "use-isnan":true,// 只允许使用isNaN方法检查数字是否有效

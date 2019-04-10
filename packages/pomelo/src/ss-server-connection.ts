@@ -42,7 +42,7 @@ export class SSServerConnection extends SocksConnectionBase<
   }
 
   private _destination: net.Socket | null = null;
-  private _connectTimeout: number;
+  private readonly _connectTimeout: number;
   constructor(socket: net.Socket, options: ISSServerConnectionOptions) {
     super(socket, options);
 

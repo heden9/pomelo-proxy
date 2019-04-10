@@ -20,9 +20,9 @@ export interface ISocksDecoder extends Writable {
 
 export class SocksDecoder extends Writable {
   private _buf: Buffer | null = null;
-  private _PacketClasses: ISocksPacketClass[];
+  private readonly _PacketClasses: ISocksPacketClass[];
   private _index: number = 0;
-  private _groupMode: boolean;
+  private readonly _groupMode: boolean;
   private _isDestroy: boolean = false;
   constructor(options: ISocksDecoderOptions) {
     super(options);

@@ -31,7 +31,7 @@
         "no-empty-interface":true,// 不允许空接口
         "no-parameter-reassignment":true,// 不允许修改方法输入参数
         "prefer-for-of":true,// 如果for循环中没有使用索引，建议是使用for-of
-
+        "no-var-requires": false,
         // 功能特性
         "await-promise":true,// 不允许没有Promise的情况下使用await
         "curly":true,// if/for/do/while强制使用大括号
@@ -40,7 +40,7 @@
         // "no-bitwise":true, // 不允许使用特殊运算符 &, &=, |, |=, ^, ^=, <<, <<=, >>, >>=, >>>, >>>=, ~
         "no-conditional-assignment":true,// do while/for/if/while 语句中将会对例如if(a=b)进行检查
         "max-classes-per-file": false,
-        // "no-console":true,// 不允许使用console对象
+        "no-console": false,// 不允许使用console对象
         "no-debugger":true,// 不允许使用debugger
         "no-duplicate-super":true,// 不允许super() 两次使用在构造函数中
         "no-empty":true,// 函数体不允许空
@@ -85,9 +85,12 @@
             "ignore-jsdoc"
         ],
         "no-unnecessary-initializer":true,// 不允许没有必要的初始化
-        "variable-name":[true,"check-format",// 定义变量命名规则
+        "variable-name":[
+            true,
+            "check-format",// 定义变量命名规则
             "allow-leading-underscore",
             "allow-trailing-underscore",
-            "ban-keywords"]
+            "ban-keywords"
+        ]
     }
 }

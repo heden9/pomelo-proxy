@@ -7,7 +7,7 @@ import {
   TSocksConnectResponseOptionsOrBuffer,
   TSocksHandshakeRequestOptionsOrBuffer,
   TSocksHandshakeResponseOptionsOrBuffer,
-} from "./packet/type";
+} from "./packet";
 
 export interface IEncoderPacketOptions {
   type: EPacketType;

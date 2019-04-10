@@ -61,10 +61,10 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
   protected _isClosed: boolean = false;
   protected _isEstablished: boolean = false;
   protected _PacketClass: ISocksPacketClass[] = [];
-  private _timer: NodeJS.Timeout;
   private _lastActiveTime: number = Date.now();
-  private _maxIdleTime: number;
-  constructor(socket: net.Socket, options: T) {
+  private readonly _timer: NodeJS.Timeout;
+  private readonly _maxIdleTime: number;
+  protected constructor(socket: net.Socket, options: T) {
     super(options);
 
     this._options = options;
@@ -151,6 +151,7 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
 
   protected abstract _handleResponse(info: IDecodeEventInfo): void;
 
+  // tslint:disable-next-line:no-empty
   protected _beforeClose() {}
 
   protected _removeInternalHandlers() {

@@ -19,8 +19,8 @@ export interface ISSLocalConnectionOptions extends ISocksConnectionOptions {
 export class SSLocalConnection extends SocksConnection {
   protected _cipher: crypto.Cipher;
   protected _decipher: crypto.Decipher;
-  private _remotePort: number;
-  private _remoteHost: string;
+  private readonly _remotePort: number;
+  private readonly _remoteHost: string;
   constructor(socket: net.Socket, options: ISSLocalConnectionOptions) {
     super(socket, options);
     this._remotePort = options.port;

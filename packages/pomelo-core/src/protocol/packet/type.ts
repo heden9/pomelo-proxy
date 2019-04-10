@@ -210,6 +210,7 @@ export type TSocksHandshakeResponseOptionsOrBuffer = WithBuffer<ISocksHandshakeR
 
 export type TSocksAuthRequestOptionsOrBuffer = WithBuffer<ISocksAuthRequestOptions>;
 export type TSocksAuthResponseOptionsOrBuffer = WithBuffer<ISocksAuthResponseOptions>;
+// tslint:disable-next-line:no-empty-interface
 export interface ISocksConnectRequest extends ISocksPacket {
   // toJSON():
 }
