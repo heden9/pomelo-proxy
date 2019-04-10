@@ -62,7 +62,8 @@ export class SSServerConnection extends SocksConnectionBase<ISSServerConnectionO
       data.address,
       async () => {
         destination.setTimeout(0);
-        debug("createProxy, start [%s:%s]", data.address, data.port);
+        debug("createProxy, start [%s:%s] with [%s:%s]", data.address, data.port, this._socket.remoteAddress, this._socket.remotePort);
+        console.log("[pomelo-ss-server] [%s:%s] connect to [%s:%s]", this._socket.remoteAddress, this._socket.remotePort, data.address, data.port);
         pump(
           this._socket,
           this._decipher,

@@ -35,8 +35,9 @@ export class SSLocalConnection extends SocksConnection {
       this._remotePort,
       this._remoteHost,
       () => {
-        debug("remote start! [%s:%s]", this._remoteHost, this._remotePort);
         remote.setTimeout(0);
+        debug("createProxy, start [%s:%s] with [%s:%s]", remote.remoteAddress, remote.remotePort, data.address, data.port);
+        console.log("[pomelo-ss-local] [%s:%s] connect to [%s:%s]",  data.address, data.port, remote.remoteAddress, remote.remotePort);
         // ss-handshake packet
         const req = new SSLocalRequest({
           address: data.address,
@@ -46,7 +47,13 @@ export class SSLocalConnection extends SocksConnection {
 
         this._cipher.write(req);
 
-        pump(this._socket, this._cipher, remote, this._decipher, this._socket);
+        pump(
+          this._socket,
+          this._cipher,
+          remote,
+          this._decipher,
+          this._socket,
+        );
       },
     );
     return remote;

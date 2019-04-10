@@ -24,8 +24,10 @@ export class SSServer extends SocksServer {
 
   protected _createConnection(socket: net.Socket) {
     return new SSServerConnection(socket, {
-      cipher: crypto.createCipheriv(this._algorithm, this._password, null),
-      decipher: crypto.createDecipheriv(this._algorithm, this._password, null),
+      // cipher: crypto.createCipheriv(this._algorithm, this._password, null),
+      // decipher: crypto.createDecipheriv(this._algorithm, this._password, null),
+      cipher: crypto.createCipher(this._algorithm, this._password),
+      decipher: crypto.createDecipher(this._algorithm, this._password),
     });
   }
 }

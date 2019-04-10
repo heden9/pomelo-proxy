@@ -162,8 +162,10 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
     // socket.setTimeout(timeout, () => {
     //   this.close(ERRORS.SOCKET_CONNECT_TIMEOUT, `connect timeout(${timeout}ms)`);
     // });
-    socket.once("error", (ex) => {
-      this.close(ERRORS.SOCKET_REMOTE_FAILED, ex.message);
+    socket.on("error", (ex: any) => {
+      if (ex.code !== "ECONNRESET") {
+        this.close(ERRORS.SOCKET_REMOTE_FAILED, ex.message);
+      }
     });
     // socket.once("close", () => {
     //   this.close(ERRORS.SOCKET_REMOTE_CLOSED);
