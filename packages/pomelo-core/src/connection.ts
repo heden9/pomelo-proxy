@@ -24,7 +24,7 @@ export type TAuthenticate = (
   userName: string,
   password: string,
   socket: net.Socket,
-  callback: Function,
+  callback: () => void,
 ) => Promise<boolean> | boolean;
 
 export interface ISocksConnectionOptions extends ISocksConnectionBaseOptions {
@@ -35,7 +35,7 @@ export interface ISocksConnectionOptions extends ISocksConnectionBaseOptions {
 @logClassDecorator(debug)
 export class SocksConnection extends SocksConnectionBase<ISocksConnectionOptions> {
   private _destination: net.Socket | null = null;
-  private _connectTimeout: number;
+  private readonly _connectTimeout: number;
   constructor(socket: net.Socket, options: ISocksConnectionOptions = {}) {
     super(socket, options);
 
@@ -117,11 +117,7 @@ export class SocksConnection extends SocksConnectionBase<ISocksConnectionOptions
     this._removeInternalHandlers();
 
     this._destination = this._createProxy(data);
-    this._destination.setNoDelay(true);
-    this._destination.setTimeout(this._connectTimeout, () => {
-      debug("proxy, timeout");
-      this.close(ERRORS.SOCKET_CONNECT_TIMEOUT, `connect timeout(${this._connectTimeout}ms)`);
-    });
+    this._socketBaseWrapper(this._destination, this._connectTimeout);
   }
 
   private _handleSocksHandshake(data: ISocksHandshakeRequestOptions) {
@@ -143,12 +139,13 @@ export class SocksConnection extends SocksConnectionBase<ISocksConnectionOptions
 
   private async _handleSocksAuth(data: ISocksAuthRequestOptions) {
     const authenticate = this._options.authenticate as TAuthenticate;
+    // tslint:disable-next-line:no-empty
     const isValid = await authenticate(data.userName, data.password, this._socket, () => {});
     const status = isValid ? ESocksAuthStatus.SUCCEEDED : ESocksAuthStatus.UNASSIGNED;
     this._sendSocksAuth(data, status);
 
     if (!isValid) {
-      this.close(ERRORS.SOCKS_AUTH_REJECTED, `invalid userName/password(${data.userName}:${data.password})`);
+      await this.close(ERRORS.SOCKS_AUTH_REJECTED, `invalid userName/password(${data.userName}:${data.password})`);
     }
   }
 }

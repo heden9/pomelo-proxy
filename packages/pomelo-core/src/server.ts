@@ -105,14 +105,9 @@ export class SocksServer extends SocksBase implements ISocksServer {
       debug("connection close");
       this._connections.delete(connection.remoteAddress);
     });
-    try {
-      await connection.awaitFirst(["established", "error"]);
-      this._connections.set(connection.remoteAddress, connection);
-      debug("handleConnection, create instance[%s]", connection.remoteAddress);
-    } catch (ex) {
-      console.log(ex);
-      // TODO: log error
-    }
+    await connection.await("established");
+    this._connections.set(connection.remoteAddress, connection);
+    debug("handleConnection, create instance[%s]", connection.remoteAddress);
   }
 
   @autobind

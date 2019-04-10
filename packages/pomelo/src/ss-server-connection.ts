@@ -20,9 +20,7 @@ export interface ISSServerConnectionOptions
 }
 
 @logClassDecorator(debug)
-export class SSServerConnection extends SocksConnectionBase<
-  ISSServerConnectionOptions
-> {
+export class SSServerConnection extends SocksConnectionBase<ISSServerConnectionOptions> {
   protected get _pipeline() {
     return [
       this._encoder,
@@ -54,14 +52,8 @@ export class SSServerConnection extends SocksConnectionBase<
     unpump(...this._pipeline);
     const buf = await this.await(this._decoder, "end");
     this._destination = this._createProxy(info.data);
-    this._destination.setNoDelay(true);
+    this._socketBaseWrapper(this._destination, this._connectTimeout);
     this._destination.write(buf);
-    this._destination.setTimeout(this._connectTimeout, () => {
-      this.close(
-        ERRORS.SOCKET_CONNECT_TIMEOUT,
-        `connect timeout(${this._connectTimeout}ms)`,
-      );
-    });
   }
 
   private _createProxy(data: ISSLocalRequestModel) {

@@ -62,7 +62,7 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
   protected _isEstablished: boolean = false;
   protected _PacketClass: ISocksPacketClass[] = [];
   private _lastActiveTime: number = Date.now();
-  private readonly _timer: NodeJS.Timeout;
+  // private readonly _timer: NodeJS.Timeout;
   private readonly _maxIdleTime: number;
   protected constructor(socket: net.Socket, options: T) {
     super(options);
@@ -71,7 +71,7 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
 
     this._socket = socket;
 
-    this._maxIdleTime = options.maxIdleTime || 30 * 1000;
+    this._maxIdleTime = options.maxIdleTime || 60 * 1000;
 
     this._decoder = this._protocol.decoder({
       PacketClass: this._PacketClass,
@@ -88,20 +88,20 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
       this._handleResponse(info);
     });
 
-    this._timer = setInterval(
-      () => {
-        const now = Date.now();
-        if (now - this._lastActiveTime >= this._maxIdleTime) {
-          console.warn(
-            "[pomelo-core:connection] socket: %s is idle for %s(ms)",
-            this.remoteAddress,
-            this._maxIdleTime,
-          );
-          this.close(ERRORS.SOCKET_IDLE_TIMEOUT, `idle timeout(${this._maxIdleTime}ms)`);
-        }
-      },
-      this._maxIdleTime,
-    );
+    // this._timer = setInterval(
+    //   () => {
+    //     const now = Date.now();
+    //     if (now - this._lastActiveTime >= this._maxIdleTime) {
+    //       console.warn(
+    //         "[pomelo-core:connection] socket: %s is idle for %s(ms)",
+    //         this.remoteAddress,
+    //         this._maxIdleTime,
+    //       );
+    //       // this.close(ERRORS.SOCKET_IDLE_TIMEOUT, `idle timeout(${this._maxIdleTime}ms)`);
+    //     }
+    //   },
+    //   this._maxIdleTime,
+    // );
   }
 
   public close(err?: Error, force?: boolean): Promise<void>;
@@ -121,7 +121,7 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
     }
 
     this._isClosed = true;
-    clearInterval(this._timer);
+    // clearInterval(this._timer);
 
     this._socket.destroy();
     this._encoder.destroy();
@@ -158,9 +158,21 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
     unpump(...this._pipeline);
   }
 
+  protected _socketBaseWrapper(socket: net.Socket, timeout: number) {
+    // socket.setTimeout(timeout, () => {
+    //   this.close(ERRORS.SOCKET_CONNECT_TIMEOUT, `connect timeout(${timeout}ms)`);
+    // });
+    socket.once("error", (ex) => {
+      this.close(ERRORS.SOCKET_REMOTE_FAILED, ex.message);
+    });
+    // socket.once("close", () => {
+    //   this.close(ERRORS.SOCKET_REMOTE_CLOSED);
+    // });
+  }
+
   @autobind
   private _handleSocketClose() {
-    this.close(ERRORS.SOCKET_CLOSED, `connection(${this.remoteAddress}) close`, true);
+    this.close(undefined, true);
   }
 
   @autobind
