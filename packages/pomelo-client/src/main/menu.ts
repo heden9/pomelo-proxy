@@ -1,67 +1,100 @@
 import { Menu as ElectronMenu, MenuItem, MenuItemConstructorOptions } from "electron";
-import * as path from "path";
+// import { logClassDecorator } from "pomelo-util";
 import SDKBase from "sdk-base";
+import { EUserDefault, UserDefaultStore } from "./store";
 import { EMode } from "./type";
+
+// const debug = require("debug")("pomelo-client:main-menu");
 
 export class MainMenu extends SDKBase {
   private _label: string = "pomelo-proxy";
-  private _isOpen: boolean = false;
+  private _store: UserDefaultStore;
+
   private get _menu(): MenuItemConstructorOptions[] {
+    const on = this._store.on;
+    const mode = this._store.mode;
     return [
       {
-        label: `${this._label}: ${this._isOpen ? "on" : "off"}`,
         enabled: false,
+        label: `${this._label}: ${on ? "on" : "off"}`,
       },
       {
-        label: `${this._isOpen ? "关闭" : "打开"} ${this._label}`,
         click: this._switchStatus,
+        label: `${on ? "关闭" : "打开"} ${this._label}`,
       },
       { type: "separator" },
       {
+        checked: mode === EMode.PAC,
+        click: this._switchMode,
+        id: EMode.PAC,
         label: "PAC自动模式",
         type: "radio",
-        id: EMode.PAC,
-        click: this._switchMode,
       },
       {
+        checked: mode === EMode.GLOBAL,
+        click: this._switchMode,
+        id: EMode.GLOBAL,
         label: "全局模式",
         type: "radio",
-        id: EMode.GLOBAL,
-        click: this._switchMode,
       },
       {
-        label: "代理设置",
-        submenu: [{ role: "minimize" }, { role: "close" }],
+        checked: mode === EMode.MANUAL,
+        click: this._switchMode,
+        id: EMode.MANUAL,
+        label: "手动模式",
+        type: "radio",
       },
       { type: "separator" },
       {
-        role: "quit",
+        label: `服务器 - `,
+        submenu: [
+          { type: "separator" },
+          {
+            label: "",
+          },
+        ],
+      },
+      {
         label: "退出",
+        role: "quit",
       },
     ];
+  }
+
+  constructor(store: UserDefaultStore) {
+    super();
+    this._store = store;
+
+    process.nextTick(() => {
+      this._emitStatusEvent();
+    });
   }
 
   public create() {
     return ElectronMenu.buildFromTemplate(this._menu);
   }
 
-  public icon() {
-    return this._isOpen
-      ? path.join(__static, "/pomeloTemplate.png")
-      : path.join(__static, "/pomelo.png");
-  }
-
-  private _switchStatus = () => {
-    this._isOpen = !this._isOpen;
-    this.emit("switch-status", this._isOpen);
-    if (this._isOpen) {
-      this.emit("ready");
+  private _emitStatusEvent() {
+    const on = this._store.on;
+    this.emit("switch-status", on);
+    if (on) {
+      this.emit("on");
     } else {
-      this.emit("close");
+      this.emit("off");
     }
   }
 
+  private _emitModeEvent() {
+    this.emit("mode", this._store.mode);
+  }
+
+  private _switchStatus = () => {
+    this._store.set(EUserDefault.POMELO_ON, "boolean", (!this._store.on) as any);
+    this._emitStatusEvent();
+  }
+
   private _switchMode = (item: MenuItem) => {
-    this.emit("switch-mode", (item as any).id);
+    this._store.set(EUserDefault.POMELO_RUNNING_MODE, "string", (item as any).id);
+    this._emitModeEvent();
   }
 }

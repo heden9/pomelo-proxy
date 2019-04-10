@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "electron-webpack dev",
+    "dev:debug": "DEBUG=pomelo* npm run dev",
     "lint": "tslint ./src/* --fix",
     "cov": "echo \"skip\"",
     "compile": "electron-webpack",
@@ -18,6 +19,8 @@
     "pomelo": "^0.0.1",
     "pomelo-util": "^0.0.1",
     "sdk-base": "^3.5.1",
+    "graceful-process": "^1.2.0",
+    "core-decorators": "^0.20.0",
     "source-map-support": "^0.5.10"
   },
   "devDependencies": {

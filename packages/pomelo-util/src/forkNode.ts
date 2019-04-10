@@ -30,13 +30,17 @@ function gracefull(proc: cp.ChildProcess) {
   }
 }
 
+interface IForkNodeResult<T = any> extends Promise<T> {
+  proc: cp.ChildProcess;
+}
+
 export function forkNode(modulePath: string, args: any[] = [], options: cp.ForkOptions = {}) {
   options.stdio = options.stdio || "inherit";
   debug("Run fork `%s %s %s`", process.execPath, modulePath, args.join(" "));
   const proc = cp.fork(modulePath, args, options);
   gracefull(proc);
 
-  return new Promise((resolve, reject) => {
+  const promise = new Promise((resolve, reject) => {
     proc.once("exit", (code: number) => {
       childs.delete(proc);
       if (code !== 0) {
@@ -49,5 +53,7 @@ export function forkNode(modulePath: string, args: any[] = [], options: cp.ForkO
         resolve();
       }
     });
-  });
+  }) as IForkNodeResult;
+  promise.proc = proc;
+  return promise;
 }

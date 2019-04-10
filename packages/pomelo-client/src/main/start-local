@@ -1,10 +1,20 @@
 #!/usr/bin/env node
 
-'use strict';
+"use strict";
 
-const debug = require('debug')('pomelo-client:start-local');
+const debug = require("debug")("pomelo-client:start-local");
+const gracefulExit = require("graceful-process");
+const { SSLocal } = require("pomelo");
 const options = JSON.parse(process.argv[2]);
-debug('start local options: %j', options);
-const { SSLocal } = require('pomelo');
+debug("start local options: %j", options);
 
-new SSLocal(options).start();
+const sslocal = new SSLocal(options);
+sslocal.start().then(() => {
+  // process.sen
+})
+
+gracefulExit({
+  beforeExit: () => sslocal.close(),
+  label: "ss-local",
+  logger: console,
+});
