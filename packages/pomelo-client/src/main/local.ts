@@ -45,11 +45,11 @@ export class LocalManager {
     if (!LocalManager.__cache) {
       // TODO: register service
       const options: ISSLocalOptions = {
-        algorithm: "aes-256-cfb",
-        password: "E8c7Nt",
+        algorithm: "rc4",
+        password: "welcome",
         port: this._store.localSocksPort,
-        serverHost: "45.77.20.146",
-        serverPort: 1025,
+        serverHost: "127.0.0.1",
+        serverPort: 9000,
       };
       LocalManager.__cache = forkNode(
         path.join(__dirname, "./start-local"),

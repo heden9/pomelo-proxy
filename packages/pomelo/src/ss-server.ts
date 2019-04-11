@@ -2,6 +2,7 @@ import * as crypto from "crypto";
 import * as net from "net";
 import { ISocksServerOptions, SocksServer } from "pomelo-core";
 import { logClassDecorator } from "pomelo-util";
+import { Encrypt } from "./encrypt";
 import { SSServerConnection } from "./ss-server-connection";
 
 const debug = require("debug")("pomelo:ss-server");
@@ -23,11 +24,11 @@ export class SSServer extends SocksServer {
   }
 
   protected _createConnection(socket: net.Socket) {
+    // fix: should create encrypt each connection
+    const encrypt = new Encrypt(this._algorithm, this._password);
     return new SSServerConnection(socket, {
-      // cipher: crypto.createCipheriv(this._algorithm, this._password, null),
-      // decipher: crypto.createDecipheriv(this._algorithm, this._password, null),
-      cipher: crypto.createCipher(this._algorithm, this._password),
-      decipher: crypto.createDecipher(this._algorithm, this._password),
+      cipher: encrypt.createCipheriv(),
+      decipher: encrypt.createDecipheriv(),
     });
   }
 }

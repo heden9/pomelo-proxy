@@ -7,15 +7,15 @@ import {
 import { IDecodeEventInfo } from "pomelo-core/build/protocol/type";
 import { logClassDecorator, unpump } from "pomelo-util";
 import pump from "pump";
+import { Duplex } from "stream";
 import { ISSLocalRequestModel, SSLocalRequest } from "./packet";
-import { ERRORS } from "./type";
 
 const debug = require("debug")("pomelo:ss-server-conn");
 
 export interface ISSServerConnectionOptions
   extends ISocksConnectionBaseOptions {
-  cipher: crypto.Cipher;
-  decipher: crypto.Decipher;
+  cipher: Duplex;
+  decipher: Duplex;
   connectTimeout?: number;
 }
 

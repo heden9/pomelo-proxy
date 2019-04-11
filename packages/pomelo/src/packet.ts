@@ -61,7 +61,8 @@ export class SSLocalRequest extends SocksV5PacketBase<ISSLocalRequestModel> {
         }
         break;
       default:
-        return 0;
+        throw new Error(`SSLocalRequest invalid addressType: ${this._buffer[0]}`);
+        // return 0;
     }
     return length + 2;
   }
