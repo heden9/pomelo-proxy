@@ -101,6 +101,10 @@ export class SocksClient extends SocksBase implements ISocksClient {
     return this._options.protocol;
   }
 
+  protected get _loggerPrefix() {
+    return "[pomelo-core][client]";
+  }
+
   private _options: Required<ISocksClientOptions>;
   private _socket: Socket = new Socket();
   private _encoder: ISocksEncoder;
@@ -139,7 +143,7 @@ export class SocksClient extends SocksBase implements ISocksClient {
     this.once("established", () => {
       this._isEstablished = true;
       this.ready(true);
-      console.log("[pomelo-core:client] client is established with %s:%s", this._socket.remoteAddress, this._socket.remotePort);
+      this.logger.info("client is established with %s:%s", this._socket.remoteAddress, this._socket.remotePort);
     });
     if (existingSocket) {
       this._socket.emit("connect");

@@ -17,6 +17,10 @@ export interface ISSLocalConnectionOptions extends ISocksConnectionOptions {
 
 @logClassDecorator(debug)
 export class SSLocalConnection extends SocksConnection {
+  protected get _loggerPrefix() {
+    return "[pomelo][ss-local-conn]";
+  }
+
   protected _cipher: Duplex;
   protected _decipher: Duplex;
   private readonly _remotePort: number;
@@ -41,8 +45,8 @@ export class SSLocalConnection extends SocksConnection {
       this._remoteHost,
       () => {
         remote.setTimeout(0);
-        debug("createProxy, start [%s:%s] with [%s:%s]", remote.remoteAddress, remote.remotePort, data.address, data.port);
-        console.log("[pomelo-ss-local] [%s:%s] connect to [%s:%s]",  data.address, data.port, remote.remoteAddress, remote.remotePort);
+        debug("createProxy, start %s:%s with %s:%s", remote.remoteAddress, remote.remotePort, data.address, data.port);
+        this.logger.info("TCP connecting %s:%s from %s:%s", data.address, data.port, remote.remoteAddress, remote.remotePort);
         // ss-handshake packet
         const req = new SSLocalRequest({
           address: data.address,

@@ -19,9 +19,10 @@
     "await-event": "^2.1.0",
     "core-decorators": "^0.20.0",
     "debug": "^4.1.1",
-    "pump": "^3.0.0",
+    "egg-logger": "^2.4.1",
     "mz-modules": "^2.1.0",
-    "ps-tree": "^1.2.0"
+    "ps-tree": "^1.2.0",
+    "pump": "^3.0.0"
   },
   "devDependencies": {
     "@types/empower": "^1.2.30",

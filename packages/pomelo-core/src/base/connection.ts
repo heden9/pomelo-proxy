@@ -49,6 +49,10 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
     ];
   }
 
+  protected get _loggerPrefix() {
+    return "[pomelo-core][connection]";
+  }
+
   public get remoteAddress() {
     return `${this._socket.remoteAddress}:${this._socket.remotePort}`;
   }
@@ -134,6 +138,7 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
     this._beforeClose();
 
     if (err) {
+      this.logger.error(err);
       // emit error after established
       if (this._isEstablished) {
         // this.emit("error", err);
@@ -180,8 +185,8 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
   @autobind
   private _handleSocketError(error: any) {
     if (error.code !== "ECONNRESET") {
-      console.warn(
-        "[pomelo-core:connection] error occured on socket: %s, errName: %s, errMsg: %s",
+      this.logger.warn(
+        "error occured on socket: %s, errName: %s, errMsg: %s",
         this.remoteAddress,
         error.name,
         error.message,

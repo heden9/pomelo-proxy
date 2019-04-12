@@ -25,14 +25,18 @@ export class SocksServer extends SocksBase implements ISocksServer {
     return [ this._publishPort ];
   }
 
+  protected get _loggerPrefix() {
+    return "[pomelo-core][server]";
+  }
+  protected _connections: Map<string, ISocksConnectionBase> = new Map();
+  protected _servers: net.Server[] = [];
+
   private _options: {
     port: number;
     killTimeout: number;
     authenticate?: TAuthenticate;
   };
-  private _connections: Map<string, ISocksConnectionBase> = new Map();
   private _publishPort: number = 0;
-  private _servers: net.Server[] = [];
   private _started = false;
   constructor(options: ISocksServerOptions) {
     super(options);
@@ -60,7 +64,7 @@ export class SocksServer extends SocksBase implements ISocksServer {
     this.emit("close");
     this.removeAllListeners();
     debug("close finished");
-    console.log("[pomelo-core:server] server %o is exit", this._publishPort);
+    this.logger.info("server %o is exit", this._publishPort);
   }
 
   public async start() {
@@ -97,6 +101,8 @@ export class SocksServer extends SocksBase implements ISocksServer {
     return new SocksConnection(socket, { authenticate: this._options.authenticate });
   }
 
+  protected _handleConnectionClose(conn: ISocksConnectionBase) {}
+
   @autobind
   protected async _handleConnection(socket: net.Socket) {
     const connection = this._createConnection(socket);
@@ -104,16 +110,19 @@ export class SocksServer extends SocksBase implements ISocksServer {
     connection.once("close", () => {
       debug("connection close");
       this._connections.delete(connection.remoteAddress);
+      this.logger.info("client %s is disconnected, current online: %d", connection.remoteAddress, this._connections.size);
+      this._handleConnectionClose(connection);
     });
     await connection.await("established");
     this._connections.set(connection.remoteAddress, connection);
+    this.logger.info("client %s:%s is connected, current online: %d", socket.remoteAddress, socket.remotePort, this._connections.size);
     debug("handleConnection, create instance[%s]", connection.remoteAddress);
   }
 
   @autobind
   private _handleUncaughtError(ex: Error) {
-    console.warn("[pomelo-core:server] server is down, cause by uncaughtException in this process %s", process.pid);
-    console.warn("[pomelo-core:server] uncaughtException [%s:%s]", ex.name, ex.message || "unknown");
+    this.logger.warn("server is down, cause by uncaughtException in this process %s", process.pid);
+    this.logger.warn("uncaughtException [%s:%s]", ex.name, ex.message || "unknown");
   }
 
   private _createServer(port: number) {
@@ -125,7 +134,7 @@ export class SocksServer extends SocksBase implements ISocksServer {
       if (port === this._publishPort && port === 0) {
         this._publishPort = realPort;
       }
-      console.log("[pomelo-core:server] server is running on %s", realPort);
+      this.logger.info("server is running on %s", realPort);
     });
     return server;
   }

@@ -39,6 +39,10 @@ export class SSServerConnection extends SocksConnectionBase<ISSServerConnectionO
     return this._options.decipher;
   }
 
+  protected get _loggerPrefix() {
+    return "[pomelo][ss-server-conn]";
+  }
+
   private _destination: net.Socket | null = null;
   private readonly _connectTimeout: number;
   constructor(socket: net.Socket, options: ISSServerConnectionOptions) {
@@ -67,8 +71,8 @@ export class SSServerConnection extends SocksConnectionBase<ISSServerConnectionO
       data.address,
       async () => {
         destination.setTimeout(0);
-        debug("createProxy, start [%s:%s] with [%s:%s]", data.address, data.port, this._socket.remoteAddress, this._socket.remotePort);
-        console.log("[pomelo-ss-server] [%s:%s] connect to [%s:%s]", this._socket.remoteAddress, this._socket.remotePort, data.address, data.port);
+        debug("createProxy, start %s:%s with %s:%s", data.address, data.port, this._socket.remoteAddress, this._socket.remotePort);
+        this.logger.info("TCP connecting %s:%s from %s:%s", data.address, data.port, this._socket.remoteAddress, this._socket.remotePort);
         pump(
           this._socket,
           this._decipher,

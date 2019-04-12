@@ -67,7 +67,6 @@ export class SocksDecoder extends Writable {
       } while (unfinished);
       callback();
     } catch (err) {
-      console.log(err);
       callback(err);
     }
   }

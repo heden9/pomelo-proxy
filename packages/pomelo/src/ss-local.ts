@@ -16,6 +16,10 @@ export interface ISSLocalOptions extends ISocksServerOptions {
 
 @logClassDecorator(debug)
 export class SSLocal extends SocksServer {
+  protected get _loggerPrefix() {
+    return "[pomelo][ss-local]";
+  }
+
   protected _serverHost: string;
   protected _serverPort: number;
   protected _password: string;
