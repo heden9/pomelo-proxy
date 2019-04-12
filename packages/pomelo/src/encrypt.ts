@@ -1,10 +1,20 @@
 import * as crypto from "crypto";
-import { Transform } from "stream";
+import { Duplex, Transform } from "stream";
 
-export class Encrypt {
-  public static support: {
-    [key: string]: [number, number],
-  } = {
+export interface IEncrypt {
+  createCipheriv(): Duplex;
+  createDecipheriv(): Duplex;
+}
+
+export interface IEncryptClass {
+  support: {
+    [key: string]: [number, number];
+  };
+  new (method: string, password: string): IEncrypt;
+}
+
+export class Encrypt implements IEncrypt {
+  public static support: IEncryptClass["support"] = {
     "aes-128-cbc": [16, 16],
     "aes-192-cbc": [24, 16],
     "aes-256-cbc": [32, 16],
@@ -42,20 +52,24 @@ export class Encrypt {
   };
 
   public static BYTES_TO_KEY_CACHE: {
-    [key: string]: [Buffer, Buffer],
+    [key: string]: [Buffer, Buffer];
   } = {};
 
-  public static EVP_BytesToKey(password: string, keyLen: number, ivLen: number) {
+  public static EVP_BytesToKey(
+    password: string,
+    keyLen: number,
+    ivLen: number,
+  ) {
     const cachedKey = `${password}-${keyLen}-${ivLen}`;
     const keyIvTuple = Encrypt.BYTES_TO_KEY_CACHE[cachedKey];
-    const m = [];
     if (keyIvTuple) {
       return keyIvTuple;
     }
 
     let i = 0;
+    const m = [];
     const passwordBuf = Buffer.from(password, "binary");
-    while (Buffer.concat(m).length < (keyLen + ivLen)) {
+    while (Buffer.concat(m).length < keyLen + ivLen) {
       const md5 = crypto.createHash("md5");
       let data = passwordBuf;
       if (i > 0) {
@@ -100,8 +114,12 @@ export class Encrypt {
     return Encrypt.EVP_BytesToKey(this._password, this._keyLen, this._ivLen);
   }
 
-  public createCipheriv() {
-    const cipheriv = crypto.createCipheriv(this._method, this._key, this._ivCipher);
+  public createCipheriv(): Duplex {
+    const cipheriv = crypto.createCipheriv(
+      this._method,
+      this._key,
+      this._ivCipher,
+    );
     // append iv
     if (!this._ivSent) {
       this._ivSent = true;
@@ -110,8 +128,8 @@ export class Encrypt {
     return cipheriv;
   }
 
-  public createDecipheriv() {
-    // create Decipheriv
+  public createDecipheriv(): Duplex {
+    // create Decipheriv directly
     if (this._ivDecipher) {
       return crypto.createDecipheriv(this._method, this._key, this._ivDecipher);
     }
@@ -124,13 +142,20 @@ export class Encrypt {
     const fnUnpipe = Transform.prototype.unpipe;
     const transform = new Transform({
       transform(chunk, encoding, callback) {
-        if (self._ivDecipher || (!self._ivDecipher && chunk.length < self._ivLen)) {
+        if (
+          self._ivDecipher ||
+          (!self._ivDecipher && chunk.length < self._ivLen)
+        ) {
           callback(null, chunk);
           return;
         }
         // enter once, get iv
-        const ivDecipher = self._ivDecipher = chunk.slice(0, self._ivLen);
-        decipheriv = crypto.createDecipheriv(self._method, self._key, ivDecipher);
+        const ivDecipher = (self._ivDecipher = chunk.slice(0, self._ivLen));
+        decipheriv = crypto.createDecipheriv(
+          self._method,
+          self._key,
+          ivDecipher,
+        );
         fnPipe.call(transform, decipheriv);
         // pipe saved dest
         for (const args of pipes) {
@@ -148,7 +173,9 @@ export class Encrypt {
       pipes.push(args);
       return args[0];
     };
-    (transform as any).unpipe = (...args: Parameters<typeof transform.unpipe>) => {
+    (transform as any).unpipe = (
+      ...args: Parameters<typeof transform.unpipe>
+    ) => {
       // delete elem from array
       for (let index = 0; index < pipes.length; index++) {
         const [destination] = pipes[index];

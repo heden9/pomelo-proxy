@@ -48,6 +48,11 @@ export class SSServerConnection extends SocksConnectionBase<ISSServerConnectionO
     this._PacketClass.push(SSLocalRequest);
   }
 
+  protected _beforeClose() {
+    this._cipher.destroy();
+    this._decipher.destroy();
+  }
+
   protected async _handleResponse(info: IDecodeEventInfo) {
     unpump(...this._pipeline);
     const buf = await this.await(this._decoder, "end");

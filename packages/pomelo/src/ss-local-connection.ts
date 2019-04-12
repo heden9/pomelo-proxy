@@ -30,6 +30,11 @@ export class SSLocalConnection extends SocksConnection {
     this._decipher = options.decipher;
   }
 
+  protected _beforeClose() {
+    this._cipher.destroy();
+    this._decipher.destroy();
+  }
+
   protected _createProxy(data: ISocksConnectRequestOptions) {
     const remote = net.createConnection(
       this._remotePort,

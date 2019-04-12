@@ -34,8 +34,10 @@ describe("local.test.ts", () => {
   afterEach(() => {
     return local.close();
   });
-  it("should proxy ok", async () => {
-    const { stdout } = await requestSocks("www.baidu.com", localPort);
-    assert.ok(stdout.indexOf("<!DOCTYPE html>") !== -1);
+  it("should proxy twice ok", async () => {
+    const { stdout: stdout1 } = await requestSocks("www.baidu.com", localPort);
+    const { stdout: stdout2 } = await requestSocks("www.baidu.com", localPort);
+    assert.ok(stdout1.indexOf("<!DOCTYPE html>") !== -1);
+    assert.ok(stdout2.indexOf("<!DOCTYPE html>") !== -1);
   });
 });
