@@ -36,7 +36,7 @@ export interface ISocksConnectionOptions extends ISocksConnectionBaseOptions {
 export class SocksConnection extends SocksConnectionBase<ISocksConnectionOptions> {
   private _destination: net.Socket | null = null;
   private readonly _connectTimeout: number;
-  constructor(socket: net.Socket, options: ISocksConnectionOptions = {}) {
+  constructor(socket: net.Socket, options: ISocksConnectionOptions) {
     super(socket, options);
 
     this._connectTimeout = options.connectTimeout || 3 * 1000;

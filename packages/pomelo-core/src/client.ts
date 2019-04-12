@@ -2,7 +2,7 @@ import { autobind } from "core-decorators";
 import { Socket } from "net";
 import { logClassDecorator, unpump } from "pomelo-util";
 import pump from "pump";
-import { SocksBase } from "./base/base";
+import { SocksBase } from "./base/socks";
 import * as protocol from "./protocol";
 import { ISocksDecoder } from "./protocol/decoder";
 import { ISocksEncoder } from "./protocol/encoder";
@@ -214,6 +214,8 @@ export class SocksClient extends SocksBase implements ISocksClient {
     if (!force) {
       await this.await(this._socket, "close");
     }
+    // close logger
+    super.close();
     this.emit("close");
     this.removeAllListeners();
   }

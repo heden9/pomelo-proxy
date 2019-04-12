@@ -29,6 +29,7 @@ export class SSServer extends SocksServer {
     return new SSServerConnection(socket, {
       cipher: encrypt.createCipheriv(),
       decipher: encrypt.createDecipheriv(),
+      logger: this.loggers.logger,
     });
   }
 }

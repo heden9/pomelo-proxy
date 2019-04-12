@@ -1,22 +1,24 @@
 import { autobind } from "core-decorators";
 import * as net from "net";
-import { unpump } from "pomelo-util";
+import { createPrefixLogger, ILoggerLike, unpump } from "pomelo-util";
 import pump from "pump";
+import SDKBase from "sdk-base";
 import * as protocol from "../protocol";
 import { ISocksDecoder } from "../protocol/decoder";
 import { ISocksEncoder } from "../protocol/encoder";
 import { ISocksPacketClass } from "../protocol/packet";
 import { IDecodeEventInfo } from "../protocol/type";
 import { ERRORS, SocksError } from "../type";
-import { SocksBase } from "./base";
 
+const $LOGGER = Symbol("SocksConnectionBase#logger");
 export interface ISocksConnectionBaseOptions {
   maxIdleTime?: number;
+  logger: ILoggerLike;
 }
 
 export type ISocksConnectionClass = new (socket: net.Socket, options: ISocksConnectionBaseOptions) => ISocksConnectionBase;
 
-export interface ISocksConnectionBase extends SocksBase {
+export interface ISocksConnectionBase extends SDKBase {
   remoteAddress: string;
   isClosed: boolean;
   isEstablished: boolean;
@@ -28,13 +30,24 @@ export interface ISocksConnectionBase extends SocksBase {
   once(event: "established", listener: (socket: net.Socket) => void): this;
 }
 
-export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions> extends SocksBase implements ISocksConnectionBase {
+export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions> extends SDKBase implements ISocksConnectionBase {
   public get isClosed() {
     return this._isClosed;
   }
 
   public get isEstablished() {
     return this._isEstablished;
+  }
+
+  public get remoteAddress() {
+    return `${this._socket.remoteAddress}:${this._socket.remotePort}`;
+  }
+
+  public get logger() {
+    if (!this[$LOGGER]) {
+      this[$LOGGER] = createPrefixLogger(this._options.logger, this._loggerPrefix);
+    }
+    return this[$LOGGER];
   }
 
   protected get _protocol() {
@@ -53,10 +66,6 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
     return "[pomelo-core][connection]";
   }
 
-  public get remoteAddress() {
-    return `${this._socket.remoteAddress}:${this._socket.remotePort}`;
-  }
-
   protected _options: T;
 
   protected _socket: net.Socket;
@@ -68,6 +77,7 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
   private _lastActiveTime: number = Date.now();
   // private readonly _timer: NodeJS.Timeout;
   private readonly _maxIdleTime: number;
+  private [$LOGGER]: ReturnType<typeof createPrefixLogger>;
   protected constructor(socket: net.Socket, options: T) {
     super(options);
 

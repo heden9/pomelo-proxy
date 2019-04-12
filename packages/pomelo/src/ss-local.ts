@@ -40,6 +40,7 @@ export class SSLocal extends SocksServer {
       cipher: encrypt.createCipheriv(),
       decipher: encrypt.createDecipheriv(),
       host: this._serverHost,
+      logger: this.loggers.logger,
       port: this._serverPort,
     });
   }

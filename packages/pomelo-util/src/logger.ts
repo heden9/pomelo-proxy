@@ -8,7 +8,7 @@ export interface ILoggerLike {
   error(...args: any[]): void;
 }
 
-type TLoggerMethod = keyof ILoggerLike;
+export type TLoggerMethod = keyof ILoggerLike;
 
 export class PrefixLogger {
   public static config: EggLoggersOptions = {
@@ -25,13 +25,10 @@ export class PrefixLogger {
     errorLogName: "common-error.log",
   };
 
-  public static createLogger(prefix: string, options: Partial<EggLoggersOptions> = {}) {
+  public static createLoggers(options: Partial<EggLoggersOptions> = {}) {
     if (process.env.NODE_ENV === "unittest") {
-      options.level = "NONE";
-    }
-    // 无中括号包裹
-    if (!(/^\[.+\]$/.test(prefix))) {
-      prefix = `[${prefix}]`;
+      options.level = "WARN";
+      options.consoleLevel = "WARN";
     }
     const loggers = new EggLoggers({
       logger: {
@@ -39,7 +36,7 @@ export class PrefixLogger {
         ...options,
       },
     } as any);
-    return new PrefixLogger(loggers.logger, prefix);
+    return loggers;
   }
 
   protected _logger: ILoggerLike;
@@ -72,4 +69,26 @@ export class PrefixLogger {
     }
     this._logger[method](...args);
   }
+}
+
+export function createLoggers(options: Partial<EggLoggersOptions> = {}) {
+  if (process.env.NODE_ENV === "unittest") {
+    options.level = "WARN";
+    options.consoleLevel = "WARN";
+  }
+  const loggers = new EggLoggers({
+    logger: {
+      ...PrefixLogger.config,
+      ...options,
+    },
+  } as any);
+  return loggers;
+}
+
+export function createPrefixLogger(logger: ILoggerLike, prefix: string) {
+  // 无中括号包裹
+  if (!(/^\[.+\]$/.test(prefix))) {
+    prefix = `[${prefix}]`;
+  }
+  return new PrefixLogger(logger, prefix);
 }

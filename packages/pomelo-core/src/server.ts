@@ -2,7 +2,7 @@ import { autobind } from "core-decorators";
 import graceful from "graceful";
 import * as net from "net";
 import { logClassDecorator } from "pomelo-util";
-import { SocksBase } from "./base/base";
+import { SocksBase } from "./base/socks";
 import { ISocksConnectionBase } from "./base/connection";
 import { SocksConnection, TAuthenticate } from "./connection";
 
@@ -61,6 +61,8 @@ export class SocksServer extends SocksBase implements ISocksServer {
       closeTasks.push(connection.close());
     }
     await Promise.all(closeTasks);
+    // close logger
+    super.close();
     this.emit("close");
     this.removeAllListeners();
     debug("close finished");
@@ -98,7 +100,10 @@ export class SocksServer extends SocksBase implements ISocksServer {
   }
 
   protected _createConnection(socket: net.Socket): ISocksConnectionBase {
-    return new SocksConnection(socket, { authenticate: this._options.authenticate });
+    return new SocksConnection(socket, {
+      authenticate: this._options.authenticate,
+      logger: this.loggers.logger,
+    });
   }
 
   protected _handleConnectionClose(conn: ISocksConnectionBase) {}
