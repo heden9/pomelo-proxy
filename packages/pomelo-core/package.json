@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsc -w -d",
     "lint": "tslint ./src/* --fix",
-    "test": "mocha -r ts-node/register test/**/*.test.ts",
+    "test": " cross-env NODE_ENV=unittest mocha -r ts-node/register test/**/*.test.ts",
     "cov": "nyc npm test && nyc report --reporter=text-lcov > coverage.lcov && codecov",
     "view": "open ./coverage/index.html",
     "build": "rm -rf build && tsc -d",
@@ -37,6 +37,7 @@
     "@types/power-assert-formatter": "^1.4.28",
     "@types/pump": "^1.0.1",
     "codecov": "^3.2.0",
+    "cross-env": "^5.2.0",
     "istanbul": "^0.4.5",
     "mocha": "^6.0.2",
     "nyc": "^13.3.0",
