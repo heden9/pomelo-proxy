@@ -183,7 +183,7 @@ export abstract class SocksConnectionBase<T extends ISocksConnectionBaseOptions>
       }
     });
     // socket.once("close", () => {
-    //   this.close(ERRORS.SOCKET_REMOTE_CLOSED);
+    //   this.logger.info("SOCKET_REMOTE_CLOSED %s", this.remoteAddress);
     // });
   }
 

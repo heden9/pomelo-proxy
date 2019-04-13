@@ -19,6 +19,7 @@ export class PacManager extends SDKBase {
   private get _PROXY() {
     return `SOCKS5 ${this._address}; SOCKS ${this._address}; DIRECT`;
   }
+
   private _store: UserDefaultStore;
   private _genPAC: GenPAC;
   private _server: http.Server | null = null;

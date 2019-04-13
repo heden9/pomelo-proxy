@@ -1,11 +1,12 @@
 import {app, Tray} from "electron";
-import {logClassDecorator} from "pomelo-util";
+import {createLoggers, createPrefixLogger} from "pomelo-util";
+import { BaseManager, TBaseManagerClass } from "./base-manager";
 import {LocalManager} from "./local";
 import {MainMenu} from "./menu";
 import {PacManager} from "./pac";
 import {ProxyHelper} from "./proxy-helper";
 import {UserDefaultStore} from "./store";
-import {EMode} from "./type";
+import {EMode, IBaseOptions} from "./type";
 
 const debug = require("debug")("pomelo-client");
 
@@ -15,9 +16,32 @@ const debug = require("debug")("pomelo-client");
 
 const $MENU = Symbol("main#menu");
 const $TRAY = Symbol("main#tray");
+const $LOGGERS = Symbol("main#loggers");
+const $LOGGER = Symbol("main#logger");
 
-@logClassDecorator(debug)
+// function createSingleton<T extends []>(scope: any, symbol: string | symbol, createMethod: (...args: T) => any, ars: T) {
+//   if (!scope[obj.__symbol]) {
+//     obj.__symbol = typeof symbol === "string" ? Symbol(symbol) : symbol;
+//     scope[obj.__symbol] = obj;
+//   }
+//   return scope[obj.__symbol];
+// }
 class Main {
+  public get loggers() {
+    if (!this[$LOGGERS]) {
+      this[$LOGGERS] = createLoggers();
+    }
+    // return createSingleton(this, 'main#loggers', )
+    return this[$LOGGERS];
+  }
+
+  public get logger() {
+    if (!this[$LOGGER]) {
+      this[$LOGGER] = createPrefixLogger(this.loggers.logger, "[pomelo-client][main]");
+    }
+    return this[$LOGGER];
+  }
+
   private get _menu() {
     if (!this[$MENU]) {
       this[$MENU] = new MainMenu(this._store);
@@ -42,10 +66,11 @@ class Main {
   private [$MENU]: MainMenu;
   private [$TRAY]: Tray;
   private readonly _store: UserDefaultStore;
-
+  private [$LOGGERS]: ReturnType<typeof createLoggers>;
+  private [$LOGGER]: ReturnType<typeof createPrefixLogger>;
   constructor() {
     this._store = new UserDefaultStore();
-    this._localManager = new LocalManager(this._store);
+    this._localManager = this._createManager(LocalManager);
     this._pacManager = new PacManager(this._store);
   }
 
@@ -56,6 +81,12 @@ class Main {
 
   public close = () => {
     this._closeProxy();
+  }
+
+  private _createManager<T extends BaseManager<IBaseOptions>>(ManagerClass: TBaseManagerClass<T>) {
+    return new ManagerClass(this._store, {
+      logger: this.loggers.logger,
+    });
   }
 
   private async _closeProxy() {
@@ -117,6 +148,7 @@ class Main {
   }
 
   private _onMenuOFF = async () => {
+    // await this._localManager.close();
     await this._closeProxy();
     this._updateTray();
   }
