@@ -28,6 +28,7 @@ export class PacManager extends SDKBase {
     super();
     this._store = store;
     this._genPAC = new GenPAC({
+      gfwlistLocal: path.join(__static, "gfwlist.txt"),
       output: pacPath,
       proxy: this._PROXY,
     });
