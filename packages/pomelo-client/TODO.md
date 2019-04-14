@@ -1,0 +1,4 @@
+- [x] autoUpdate & server-support
+- [x] PAC-manager automatically saves gfwlist and proxy.pac
+- [x] crashReporter & server-support
+- [x] save user data into Application Support's dir

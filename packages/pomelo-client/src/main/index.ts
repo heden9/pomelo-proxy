@@ -71,7 +71,7 @@ class Main {
   constructor() {
     this._store = new UserDefaultStore();
     this._localManager = this._createManager(LocalManager);
-    this._pacManager = new PacManager(this._store);
+    this._pacManager = this._createManager(PacManager);
   }
 
   public start() {

@@ -1,5 +1,4 @@
 import { Menu as ElectronMenu, MenuItem, MenuItemConstructorOptions } from "electron";
-// import { logClassDecorator } from "pomelo-util";
 import SDKBase from "sdk-base";
 import { EUserDefault, UserDefaultStore } from "./store";
 import { EMode } from "./type";
@@ -45,15 +44,15 @@ export class MainMenu extends SDKBase {
         type: "radio",
       },
       { type: "separator" },
-      {
-        label: `服务器 - `,
-        submenu: [
-          { type: "separator" },
-          {
-            label: "",
-          },
-        ],
-      },
+      // {
+      //   label: `服务器 - `,
+      //   submenu: [
+      //     { type: "separator" },
+      //     {
+      //       label: "",
+      //     },
+      //   ],
+      // },
       {
         label: "退出",
         role: "quit",
