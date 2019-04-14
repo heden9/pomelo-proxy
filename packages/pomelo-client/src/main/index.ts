@@ -37,7 +37,7 @@ class Main {
 
   public get logger() {
     if (!this[$LOGGER]) {
-      this[$LOGGER] = createPrefixLogger(this.loggers.logger, "[pomelo-client][main]");
+      this[$LOGGER] = createPrefixLogger(this.loggers.coreLogger, "[pomelo-client][main]");
     }
     return this[$LOGGER];
   }
@@ -85,7 +85,7 @@ class Main {
 
   private _createManager<T extends BaseManager<IBaseOptions>>(ManagerClass: TBaseManagerClass<T>) {
     return new ManagerClass(this._store, {
-      logger: this.loggers.logger,
+      logger: this.loggers.coreLogger,
     });
   }
 

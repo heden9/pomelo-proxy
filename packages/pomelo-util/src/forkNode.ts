@@ -37,7 +37,7 @@ interface IForkNodeResult<T = any> extends Promise<T> {
 export function forkNode(modulePath: string, args: any[] = [], options: cp.ForkOptions = {}) {
   options.stdio = options.stdio || "inherit";
   debug("Run fork `%s %s %s`", process.execPath, modulePath, args.join(" "));
-  const proc = cp.fork(modulePath, args, options);
+  const proc = cp.spawn(modulePath, args, options);
   gracefull(proc);
 
   const promise = new Promise((resolve, reject) => {

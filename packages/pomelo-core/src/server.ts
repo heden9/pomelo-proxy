@@ -2,27 +2,28 @@ import { autobind } from "core-decorators";
 import graceful from "graceful";
 import * as net from "net";
 import { logClassDecorator } from "pomelo-util";
-import { SocksBase } from "./base/socks";
 import { ISocksConnectionBase } from "./base/connection";
+import { SocksBase } from "./base/socks";
 import { SocksConnection, TAuthenticate } from "./connection";
 
 const debug = require("debug")("pomelo-core:server");
 export interface ISocksServerOptions {
   port: number;
+  host?: string;
   killTimeout?: number;
   authenticate?: TAuthenticate;
 }
 
 export interface ISocksServer {
-  listenPorts: number[];
+  listenOptions: { port: number, host?: string }[];
   close(): Promise<void>;
   start(): Promise<void>;
 }
 
 @logClassDecorator(debug)
 export class SocksServer extends SocksBase implements ISocksServer {
-  public get listenPorts() {
-    return [ this._publishPort ];
+  public get listenOptions() {
+    return [ { port: this._publishPort, host: this._publishHost } ];
   }
 
   protected get _loggerPrefix() {
@@ -37,6 +38,7 @@ export class SocksServer extends SocksBase implements ISocksServer {
     authenticate?: TAuthenticate;
   };
   private _publishPort: number = 0;
+  private _publishHost?: string;
   private _started = false;
   constructor(options: ISocksServerOptions) {
     super(options);
@@ -46,6 +48,7 @@ export class SocksServer extends SocksBase implements ISocksServer {
       ...options,
     };
     this._publishPort = options.port;
+    this._publishHost = options.host;
   }
 
   public async close() {
@@ -73,8 +76,8 @@ export class SocksServer extends SocksBase implements ISocksServer {
     if (!this._started) {
       this._started = true;
 
-      for (const port of this.listenPorts) {
-        const server = this._createServer(port);
+      for (const option of this.listenOptions) {
+        const server = this._createServer(option.port, option.host);
         this._servers.push(server);
       }
 
@@ -130,16 +133,16 @@ export class SocksServer extends SocksBase implements ISocksServer {
     this.logger.warn("uncaughtException [%s:%s]", ex.name, ex.message || "unknown");
   }
 
-  private _createServer(port: number) {
+  private _createServer(port: number, host?: string) {
     const server = net.createServer();
-    server.once("error", (err) => { this.emit("error", err); });
     server.on("connection", this._handleConnection);
-    server.listen(port, () => {
-      const { port: realPort } = server.address() as net.AddressInfo;
+    const options = { host, port };
+    server.listen(options, () => {
+      const { port: realPort, address } = server.address() as net.AddressInfo;
       if (port === this._publishPort && port === 0) {
         this._publishPort = realPort;
       }
-      this.logger.info("server is running on %s", realPort);
+      this.logger.info("server is running on %s:%s", address, realPort);
     });
     return server;
   }

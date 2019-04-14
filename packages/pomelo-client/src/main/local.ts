@@ -26,19 +26,33 @@
 //   private static __cache: SSLocal | null;
 // }
 
+import * as os from "os";
 import * as path from "path";
 import { ISSLocalOptions } from "pomelo";
 import { forkNode, terminate } from "pomelo-util";
 import { BaseManager } from "./base-manager";
 import { IBaseOptions } from "./type";
 
+const platform = os.platform();
 /**
  * 新开进程来跑 ss-local-server，防止主进程被拖垮
  */
+let count = 0;
 export class LocalManager extends BaseManager<IBaseOptions> {
   protected get _loggerPrefix() {
     return "[pomelo][local-manager]";
   }
+
+  private get _scriptPath() {
+    let name = "";
+    if (platform === "darwin") {
+      name = "macos";
+    } else if (platform === "linux") {
+      name = "linux";
+    }
+    return path.join(__static, `start-local-${name}`);
+  }
+
   // tslint:disable-next-line:variable-name
   private static __cache: ReturnType<typeof forkNode> | null;
   public instance() {
@@ -51,18 +65,31 @@ export class LocalManager extends BaseManager<IBaseOptions> {
         serverHost: "127.0.0.1",
         serverPort: 9000,
       };
-      const scriptPath = path.join(__dirname, "./start-local");
+      const scriptPath = this._scriptPath;
       this.logger.info("forkNode %s with %j", scriptPath, options);
       LocalManager.__cache = forkNode(
         scriptPath,
         [JSON.stringify(options)],
       );
       // TODO: 熔断
+
+      LocalManager.__cache.proc.once("error", (ex) => {
+        // 一般认为是启动错误
+        this.logger.error(ex);
+        LocalManager.__cache = null;
+      });
+
       LocalManager.__cache.catch(() => {
         this.logger.warn("process:%s exit", (LocalManager.__cache as any).proc.pid);
         LocalManager.__cache = null;
-        this.instance();
-        this.logger.info("reload:%s", (LocalManager.__cache as any).proc.pid);
+        if (count > 3) {
+          return;
+        }
+        process.nextTick(() => {
+          this.instance();
+          count ++;
+          this.logger.info("reload:%s", (LocalManager.__cache as any).proc.pid);
+        });
       });
     }
   }

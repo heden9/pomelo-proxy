@@ -18,7 +18,7 @@ export class UserDefaultStore {
   public static initialData = {
     [EUserDefault.POMELO_ON]: true,
     [EUserDefault.POMELO_RUNNING_MODE]: EMode.PAC,
-    [EUserDefault.LOCAL_SOCKS5_LISTEN_PORT]: 1088,
+    [EUserDefault.LOCAL_SOCKS5_LISTEN_PORT]: 1086,
     [EUserDefault.LOCAL_SOCKS5_LISTEN_HOST]: "127.0.0.1",
     [EUserDefault.PAC_SERVER_LISTEN_PORT]: 8090,
     [EUserDefault.LOCAL_SOCKS5_TIMEOUT]: 60,
