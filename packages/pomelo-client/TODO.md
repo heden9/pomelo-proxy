@@ -1,4 +1,4 @@
-- [x] autoUpdate & server-support
+- [x] autoUpdate & server-support link: https://medium.com/cameron-nokes/how-to-store-user-data-in-electron-3ba6bf66bc1e
 - [x] PAC-manager automatically saves gfwlist and proxy.pac
 - [x] crashReporter & server-support
 - [x] save user data into Application Support's dir

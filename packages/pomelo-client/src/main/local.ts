@@ -58,12 +58,21 @@ export class LocalManager extends BaseManager<IBaseOptions> {
   public instance() {
     if (!LocalManager.__cache) {
       // TODO: register service
+      // const options: ISSLocalOptions = {
+      //   algorithm: "rc4",
+      //   password: "welcome",
+      //   port: this._store.localSocksPort,
+      //   serverHost: "127.0.0.1",
+      //   serverPort: 9000,
+      // };
+      // FIXME: dont commit
       const options: ISSLocalOptions = {
-        algorithm: "rc4",
-        password: "welcome",
+        algorithm: "aes-256-cfb",
+        host: this._store.localSocksHost,
+        password: "E8c7Nt",
         port: this._store.localSocksPort,
-        serverHost: "127.0.0.1",
-        serverPort: 9000,
+        serverHost: "45.77.20.146",
+        serverPort: 1025,
       };
       const scriptPath = this._scriptPath;
       this.logger.info("forkNode %s with %j", scriptPath, options);

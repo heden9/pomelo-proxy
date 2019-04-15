@@ -19,6 +19,7 @@ const $TRAY = Symbol("main#tray");
 const $LOGGERS = Symbol("main#loggers");
 const $LOGGER = Symbol("main#logger");
 
+// const server = "https://hazel.771854332.now.sh";
 // function createSingleton<T extends []>(scope: any, symbol: string | symbol, createMethod: (...args: T) => any, ars: T) {
 //   if (!scope[obj.__symbol]) {
 //     obj.__symbol = typeof symbol === "string" ? Symbol(symbol) : symbol;

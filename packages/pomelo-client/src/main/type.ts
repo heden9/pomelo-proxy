@@ -1,4 +1,4 @@
-import { ILoggerLike } from "../../../pomelo-util/build";
+import { ILoggerLike } from "pomelo-util";
 
 export enum EMode {
   PAC = "PAC",
