@@ -11,6 +11,7 @@ export enum EUserDefault {
   PAC_SERVER_LISTEN_PORT = "PacServer.ListenPort",
   GFW_LIST_URL = "GFWListURL",
   PROXY_EXCEPTIONS = "ProxyExceptions",
+  POMELO_UPDATE_ORIGIN = "pomeloRemoteOrigin",
 }
 
 // TODO: cahce
@@ -24,6 +25,7 @@ export class UserDefaultStore {
     [EUserDefault.LOCAL_SOCKS5_TIMEOUT]: 60,
     [EUserDefault.GFW_LIST_URL]: "https://raw.githubusercontent.com/gfwlist/gfwlist/master/gfwlist.txt",
     [EUserDefault.GFW_LIST_URL]: "127.0.0.1, localhost, 192.168.0.0/16, 10.0.0.0/8, FE80::/64, ::1, FD00::/8",
+    [EUserDefault.POMELO_UPDATE_ORIGIN]: "https://api.github.com/repos/w771854332/pomelo-proxy/releases?per_page=100",
   };
 
   public get icon() {
@@ -50,6 +52,10 @@ export class UserDefaultStore {
 
   public get pacServerPort() {
     return this.get(EUserDefault.PAC_SERVER_LISTEN_PORT, "integer");
+  }
+
+  public get pomeloUpdateOrigin() {
+    return this.get(EUserDefault.POMELO_UPDATE_ORIGIN, "string");
   }
 
   constructor() {

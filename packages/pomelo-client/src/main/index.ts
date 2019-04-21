@@ -1,15 +1,17 @@
-import {app, Tray} from "electron";
-import {createLoggers, createPrefixLogger} from "pomelo-util";
+import { app, BrowserWindow, Tray } from "electron";
+import * as os from "os";
+import * as path from "path";
+import { createLoggers, createPrefixLogger } from "pomelo-util";
 import { BaseManager, TBaseManagerClass } from "./base-manager";
-import {LocalManager} from "./local";
-import {MainMenu} from "./menu";
-import {PacManager} from "./pac";
-import {ProxyHelper} from "./proxy-helper";
-import {UserDefaultStore} from "./store";
-import {EMode, IBaseOptions} from "./type";
+import { LocalManager } from "./local";
+import { MainMenu } from "./menu";
+import { PacManager } from "./pac";
+import { ProxyHelper } from "./proxy-helper";
+import { UserDefaultStore } from "./store";
+import { EMode, IBaseOptions } from "./type";
+import { UpdateManager } from "./update";
 
 const debug = require("debug")("pomelo-client");
-
 // TODO:
 // - 1.PAC mode
 // - 2.auto set
@@ -27,6 +29,20 @@ const $LOGGER = Symbol("main#logger");
 //   }
 //   return scope[obj.__symbol];
 // }
+let win: any;
+function sendStatusToWindow(text: string) {
+  win.webContents.send("message", text);
+}
+function createDefaultWindow() {
+  win = new BrowserWindow();
+  win.webContents.openDevTools();
+  win.on("closed", () => {
+    win = null;
+  });
+  win.loadURL(`file://${path.join(__static, "index.html")}#v${app.getVersion()}`);
+  return win;
+}
+
 class Main {
   public get loggers() {
     if (!this[$LOGGERS]) {
@@ -57,20 +73,32 @@ class Main {
     return this[$TRAY];
   }
 
+  // private get _notification() {
+  //   if (!this[$NOTIFICATION]) {
+  //     this[$NOTIFICATION] = new Notification();
+  //   }
+  // }
+
   private get _contextMenu() {
     return this._menu.create();
   }
 
   private _pacManager: PacManager;
   private _localManager: LocalManager;
+  private _updateManager: UpdateManager;
   private _app = app;
   private [$MENU]: MainMenu;
   private [$TRAY]: Tray;
+  // private [$NOTIFICATION]: Notification;
   private readonly _store: UserDefaultStore;
   private [$LOGGERS]: ReturnType<typeof createLoggers>;
   private [$LOGGER]: ReturnType<typeof createPrefixLogger>;
   constructor() {
     this._store = new UserDefaultStore();
+    this._updateManager = this._createManager(UpdateManager, {
+      appVersion: this._app.getVersion(),
+      platform: os.platform(),
+    });
     this._localManager = this._createManager(LocalManager);
     this._pacManager = this._createManager(PacManager);
   }
@@ -84,9 +112,10 @@ class Main {
     this._closeProxy();
   }
 
-  private _createManager<T extends BaseManager<IBaseOptions>>(ManagerClass: TBaseManagerClass<T>) {
+  private _createManager<T extends IBaseOptions, R extends BaseManager<T>>(ManagerClass: TBaseManagerClass<T, R>, args?: any) {
     return new ManagerClass(this._store, {
       logger: this.loggers.coreLogger,
+      ...args,
     });
   }
 
@@ -101,6 +130,10 @@ class Main {
     this._tray.setImage(this._store.icon);
     this._tray.setContextMenu(this._contextMenu);
   }
+
+  // private _checkUpdate() {
+  //   // TODO: need code signature
+  // }
 
   private async _setupPacProxy() {
     await this._closeProxy();
@@ -140,6 +173,14 @@ class Main {
     this._menu.on("off", this._onMenuOFF);
     this._menu.on("mode", this._onMenuSwitchMode);
     this._tray.setContextMenu(this._contextMenu);
+    createDefaultWindow();
+    this._updateManager.on("download-progress", (progressObj) => {
+      let log_message = "Download speed: " + (progressObj.bytesPerSecond / 1024).toFixed(2) + " k/s";
+      log_message = log_message + " - Downloaded " + (progressObj.percent * 100).toFixed(2) + "%";
+      log_message = log_message + " (" + progressObj.transferred + "/" + progressObj.total + ")";
+      sendStatusToWindow(log_message);
+    });
+    this._updateManager.checkComponent();
   }
 
   private _onMenuON = async () => {

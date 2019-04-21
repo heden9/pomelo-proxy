@@ -26,4 +26,4 @@ export class BaseManager<T extends IBaseOptions> extends SDKBase {
   }
 }
 
-export type TBaseManagerClass<T extends BaseManager<IBaseOptions>> = new (store: UserDefaultStore, options: IBaseOptions) => T;
+export type TBaseManagerClass<T extends IBaseOptions, R extends BaseManager<T>> = new (store: UserDefaultStore, options: T) => R;

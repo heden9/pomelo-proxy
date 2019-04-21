@@ -14,11 +14,15 @@
     "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null"
   },
   "dependencies": {
+    "axios": "^0.18.0",
     "debug": "^4.1.1",
     "genpac": "^1.3.0",
+    "node-machine-id": "^1.1.10",
     "pomelo": "^0.0.2",
     "pomelo-util": "^0.0.2",
+    "request": "^2.88.0",
     "sdk-base": "^3.5.1",
+    "semver": "^6.0.0",
     "source-map-support": "^0.5.10"
   },
   "build": {
@@ -30,13 +34,16 @@
     }
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.4.32",
     "@types/node": "^11.13.4",
+    "@types/request": "^2.48.1",
     "cross-env": "^5.2.0",
     "electron": "3.0.16",
     "electron-builder": "20.38.4",
     "electron-webpack": "^2.6.2",
     "electron-webpack-ts": "^3.1.1",
     "graceful-process": "^1.2.0",
+    "pkg": "^4.3.7",
     "tslint": "^5.15.0",
     "typescript": "^3.4.2",
     "webpack": "4.28.4"

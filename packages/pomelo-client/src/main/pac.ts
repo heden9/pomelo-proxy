@@ -13,6 +13,10 @@ const pomeloPath = path.join(process.env.HOME as string, ".pomelo");
 const pacPath = path.join(pomeloPath, "proxy.pac");
 
 export class PacManager extends BaseManager<IBaseOptions> {
+  protected get _loggerPrefix() {
+    return "[pomelo][pac-manager]";
+  }
+
   private get _address() {
     return `${this._store.localSocksHost}:${this._store.localSocksPort}`;
   }
