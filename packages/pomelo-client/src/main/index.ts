@@ -1,4 +1,5 @@
 import { app, BrowserWindow, Tray } from "electron";
+import unhandled from "electron-unhandled";
 import * as os from "os";
 import * as path from "path";
 import { createLoggers, createPrefixLogger } from "pomelo-util";
@@ -21,7 +22,6 @@ const $TRAY = Symbol("main#tray");
 const $LOGGERS = Symbol("main#loggers");
 const $LOGGER = Symbol("main#logger");
 
-// const server = "https://hazel.771854332.now.sh";
 // function createSingleton<T extends []>(scope: any, symbol: string | symbol, createMethod: (...args: T) => any, ars: T) {
 //   if (!scope[obj.__symbol]) {
 //     obj.__symbol = typeof symbol === "string" ? Symbol(symbol) : symbol;
@@ -73,12 +73,6 @@ class Main {
     return this[$TRAY];
   }
 
-  // private get _notification() {
-  //   if (!this[$NOTIFICATION]) {
-  //     this[$NOTIFICATION] = new Notification();
-  //   }
-  // }
-
   private get _contextMenu() {
     return this._menu.create();
   }
@@ -87,10 +81,11 @@ class Main {
   private _localManager: LocalManager;
   private _updateManager: UpdateManager;
   private _app = app;
+  private readonly _store: UserDefaultStore;
+  private _awaitUpdate: Promise<any> | null = null;
   private [$MENU]: MainMenu;
   private [$TRAY]: Tray;
   // private [$NOTIFICATION]: Notification;
-  private readonly _store: UserDefaultStore;
   private [$LOGGERS]: ReturnType<typeof createLoggers>;
   private [$LOGGER]: ReturnType<typeof createPrefixLogger>;
   constructor() {
@@ -169,6 +164,9 @@ class Main {
   }
 
   private _onReady = () => {
+    unhandled({
+      logger: (ex) => this.logger.error(ex),
+    });
     this._menu.on("on", this._onMenuON);
     this._menu.on("off", this._onMenuOFF);
     this._menu.on("mode", this._onMenuSwitchMode);
@@ -180,10 +178,12 @@ class Main {
       log_message = log_message + " (" + progressObj.transferred + "/" + progressObj.total + ")";
       sendStatusToWindow(log_message);
     });
-    this._updateManager.checkComponent();
+    // TODO: close Window after downloaded
+    this._awaitUpdate = this._updateManager.checkComponent();
   }
 
   private _onMenuON = async () => {
+    await this._awaitUpdate;
     this._localManager.instance();
     await this._setupProxy();
     this._updateTray();

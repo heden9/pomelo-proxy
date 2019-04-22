@@ -1,16 +1,17 @@
 import * as AdmZip from "adm-zip";
 import axios from "axios";
-import { app } from "electron";
 import * as fs from "fs";
 import * as path from "path";
 import * as request from "request";
 import * as util from "util";
 import { BaseManager } from "./base-manager";
+import { EUserDefault } from "./store";
 import { IBaseOptions, IUpdateCacheMapData } from "./type";
 
 const semver = require("semver");
-const userDataPath = app.getPath("userData");
 const rename = util.promisify(fs.rename);
+const chmod = util.promisify(fs.chmod);
+
 export interface IUpdateManagerOptions extends IBaseOptions {
   appVersion: string;
   platform: NodeJS.Platform;
@@ -46,11 +47,13 @@ export class UpdateManager extends BaseManager<IUpdateManagerOptions> {
     const data = this._cache.get("pomelo");
 
     if (!data) {
+      this.logger.warn("app: pomelo check update failed");
       return;
     }
 
     if (semver.compare(data.version, this._options.appVersion) !== 0) {
       this.emit("app-update", data);
+      // TODO: app update logic
     }
   }
 
@@ -59,25 +62,47 @@ export class UpdateManager extends BaseManager<IUpdateManagerOptions> {
     const data = this._cache.get("start-local");
 
     if (!data) {
+      this.logger.warn("component: ss-local check update failed");
       return;
     }
 
-    // if (fs.existsSync())
-    // TODO: get start-local version
-    if (semver.compare(data.version, this._options.appVersion) !== 0) {
+    const ssLocalScriptInfo = this._store.ssLocalScriptInfo;
+    const latestVersion = data.version;
+    const localVersion = ssLocalScriptInfo.version;
+    this.logger.info("component: ss-local(v%s), latest(v%s)", localVersion, latestVersion);
+    // need to update
+    if (semver.compare(latestVersion, localVersion) !== 0) {
       this.emit("component-update", data);
-      this.updateComponent(data.raw.browser_download_url);
+      await this.fetchComponent(data);
+      // update ss-local-script-version
+      this.logger.info("component: ss-local update v%s -> v%s", localVersion, latestVersion);
+      this._store.set(EUserDefault.SS_LOCAL_SCRIPT_VERSION, "string", latestVersion);
+    } else if (!fs.existsSync(ssLocalScriptInfo.path)) {
+      // script not exist
+      this.logger.warn("component: ss-local not exist, re download...");
+      await this.fetchComponent(data);
+      this.logger.info("component: ss-local %s recovery completed", ssLocalScriptInfo.path);
     }
   }
 
-  public async updateComponent(url: string) {
-    const basename = path.basename(url);
-    const output = path.join(userDataPath, basename);
-    await this._download(url, output);
-    await this._unzip(output);
-    this.logger.info("download %s to %s, update success", basename, userDataPath);
+  public async fetchComponent(data: IUpdateCacheMapData) {
+    const latestUrl = data.raw.browser_download_url;
+    const userDataPath = this._store.userDataPath;
+    const basename = path.basename(latestUrl);
+    const setupPath = path.join(userDataPath, basename);
+    // setup not exist, re download
+    if (!fs.existsSync(setupPath)) {
+      await this._download(latestUrl, setupPath);
+    }
+    const ssLocalScriptInfo = this._store.ssLocalScriptInfo;
+    await this._unzip(setupPath, ssLocalScriptInfo.path);
   }
 
+  /**
+   *
+   * @param url download_url
+   * @param output download_target_url
+   */
   private _download(url: string, output: string) {
     return new Promise((resolve, reject) => {
       const inputStream = request.get(url);
@@ -114,20 +139,35 @@ export class UpdateManager extends BaseManager<IUpdateManagerOptions> {
         reject(ex);
       });
       outputStream.once("close", async () => {
-        // TODO: check file exist
+        const now = Date.now();
+        this.emit("download-progress", {
+          bytesPerSecond: Math.round(transferred / ((now - start) / 1000)),
+          delta,
+          percent: transferred / total,
+          total,
+          transferred,
+        });
         await rename(tmp, output);
-        // fs.copyFile
         resolve();
       });
     });
   }
 
-  private async _unzip(input: string) {
-    const zip = new AdmZip(input);
+  private async _unzip(input: string, output: string) {
     const dir = path.dirname(input);
+    const zip = new AdmZip(input);
+    const entries = zip.getEntries();
+    if (!entries.length || !entries[0]) {
+      this.logger.warn("%s unzip failed, invalid entries length", input);
+      return;
+    }
+    const innerFileName = entries[0].name;
+    const innerFilePath = path.join(dir, innerFileName);
     const extractAllToAsync = util.promisify(zip.extractAllToAsync);
     try {
       await extractAllToAsync(dir, false);
+      await chmod(innerFilePath, "755");
+      await rename(innerFilePath, output);
     } catch (ex) {
       this.logger.error(ex);
     }

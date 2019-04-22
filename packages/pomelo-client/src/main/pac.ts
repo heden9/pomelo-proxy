@@ -2,15 +2,11 @@ import * as fs from "fs";
 import GenPAC from "genpac";
 import * as http from "http";
 import * as path from "path";
-import { promisify } from "util";
 import { BaseManager } from "./base-manager";
 import { UserDefaultStore } from "./store";
 import { IBaseOptions } from "./type";
 
 const debug = require("debug")("pomelo-client");
-const mkdir = promisify(fs.mkdir);
-const pomeloPath = path.join(process.env.HOME as string, ".pomelo");
-const pacPath = path.join(pomeloPath, "proxy.pac");
 
 export class PacManager extends BaseManager<IBaseOptions> {
   protected get _loggerPrefix() {
@@ -27,12 +23,12 @@ export class PacManager extends BaseManager<IBaseOptions> {
 
   private _genPAC: GenPAC;
   private _server: http.Server | null = null;
-
+  private _pacPath = path.join(this._store.userDataPath, "proxy.pac");
   constructor(store: UserDefaultStore, options: IBaseOptions) {
     super(store, options);
     this._genPAC = new GenPAC({
       gfwlistLocal: path.join(__static, "gfwlist.txt"),
-      output: pacPath,
+      output: this._pacPath,
       proxy: this._PROXY,
     });
   }
@@ -41,11 +37,11 @@ export class PacManager extends BaseManager<IBaseOptions> {
     // TODO: refactor genPAC
     await this._generatePAC();
     this._server = http.createServer((req, res) => {
-      debug("on connect", pacPath);
-      if (fs.existsSync(pacPath)) {
-        fs.createReadStream(pacPath).pipe(res);
+      debug("on connect", this._pacPath);
+      if (fs.existsSync(this._pacPath)) {
+        fs.createReadStream(this._pacPath).pipe(res);
       } else {
-        this.logger.warn("file: %s don't exsit", pacPath);
+        this.logger.warn("file: %s don't exsit", this._pacPath);
       }
     }).listen(this._store.pacServerPort);
     await this.awaitFirst(this._server, ["error", "listening"]);
@@ -64,10 +60,6 @@ export class PacManager extends BaseManager<IBaseOptions> {
   }
 
   private async _generatePAC() {
-    debug("generatePAC", fs.existsSync(pomeloPath));
-    if (!fs.existsSync(pomeloPath)) {
-      await mkdir(pomeloPath);
-    }
     this._genPAC.generate();
   }
 }

@@ -1,35 +1,26 @@
-import { app } from "electron";
-import * as os from "os";
-import * as path from "path";
 import { ISSLocalOptions } from "pomelo";
 import { forkNode, terminate } from "pomelo-util";
 import { BaseManager } from "./base-manager";
 import { IBaseOptions } from "./type";
 
-const platform = os.platform();
-// const userDataPath = app.getPath("userData");
+
 /**
  * 新开进程来跑 ss-local-server，防止主进程被拖垮
  */
 let count = 0;
+const COUNT_LIMIT = -1;
 export class LocalManager extends BaseManager<IBaseOptions> {
   protected get _loggerPrefix() {
     return "[pomelo][local-manager]";
   }
 
   private get _scriptPath() {
-    let name = "";
-    if (platform === "darwin") {
-      name = "macos";
-    } else if (platform === "linux") {
-      name = "linux";
-    }
-    return path.join(__static, `start-local-${name}`);
+    return this._store.ssLocalScriptInfo.path;
   }
 
   // tslint:disable-next-line:variable-name
   private static __cache: ReturnType<typeof forkNode> | null;
-  public instance() {
+  public async instance() {
     if (!LocalManager.__cache) {
       // TODO: register service
       // const options: ISSLocalOptions = {
@@ -49,7 +40,7 @@ export class LocalManager extends BaseManager<IBaseOptions> {
         serverPort: 1025,
       };
       const scriptPath = this._scriptPath;
-      this.logger.info("forkNode %s with %j", scriptPath, options);
+      this.logger.info("Run fork %s %s %j", process.execPath, scriptPath, options);
       LocalManager.__cache = forkNode(
         scriptPath,
         [JSON.stringify(options)],
@@ -62,10 +53,11 @@ export class LocalManager extends BaseManager<IBaseOptions> {
         LocalManager.__cache = null;
       });
 
-      LocalManager.__cache.catch(() => {
+      LocalManager.__cache.catch((ex) => {
+        this.logger.error(ex);
         this.logger.warn("process:%s exit", (LocalManager.__cache as any).proc.pid);
         LocalManager.__cache = null;
-        if (count > 3) {
+        if (count > COUNT_LIMIT) {
           return;
         }
         process.nextTick(() => {

@@ -1,10 +1,11 @@
-import { systemPreferences } from "electron";
+import { app, systemPreferences } from "electron";
 import * as path from "path";
 import { EMode } from "./type";
 
 export enum EUserDefault {
   POMELO_ON = "pomeloOn",
   POMELO_RUNNING_MODE = "pomeloRunningMode",
+  SS_LOCAL_SCRIPT_VERSION = "ssLocalScriptVersion",
   LOCAL_SOCKS5_LISTEN_PORT = "LocalSocks5.ListenPort",
   LOCAL_SOCKS5_LISTEN_HOST = "LocalSocks5.ListenAddress",
   LOCAL_SOCKS5_TIMEOUT = "LocalSocks5.Timeout",
@@ -14,11 +15,14 @@ export enum EUserDefault {
   POMELO_UPDATE_ORIGIN = "pomeloRemoteOrigin",
 }
 
+const userDataPath = app.getPath("userData");
+const userHomePath = app.getPath("home");
 // TODO: cahce
 export class UserDefaultStore {
   public static initialData = {
     [EUserDefault.POMELO_ON]: true,
     [EUserDefault.POMELO_RUNNING_MODE]: EMode.PAC,
+    [EUserDefault.SS_LOCAL_SCRIPT_VERSION]: "0.0.1",
     [EUserDefault.LOCAL_SOCKS5_LISTEN_PORT]: 1086,
     [EUserDefault.LOCAL_SOCKS5_LISTEN_HOST]: "127.0.0.1",
     [EUserDefault.PAC_SERVER_LISTEN_PORT]: 8090,
@@ -32,6 +36,23 @@ export class UserDefaultStore {
     return this.get(EUserDefault.POMELO_ON, "boolean")
       ? path.join(__static, "/pomeloTemplate.png")
       : path.join(__static, "/pomelo.png");
+  }
+
+  public get userDataPath() {
+    return userDataPath;
+  }
+
+  public get homePath() {
+    return userHomePath;
+  }
+
+  public get ssLocalScriptInfo() {
+    const version = this.get(EUserDefault.SS_LOCAL_SCRIPT_VERSION, "string");
+    const scriptPath = path.join(this.userDataPath, `start-local-${version}`);
+    return {
+      path: scriptPath,
+      version,
+    };
   }
 
   public get on() {
