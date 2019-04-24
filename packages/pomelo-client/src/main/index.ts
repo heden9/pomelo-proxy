@@ -44,6 +44,7 @@ function createDefaultWindow() {
 }
 
 class Main {
+  // TODO: refactor createGetters
   public get loggers() {
     if (!this[$LOGGERS]) {
       this[$LOGGERS] = createLoggers();
