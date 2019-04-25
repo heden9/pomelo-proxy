@@ -205,6 +205,7 @@ class Main {
     if (!this._store.ready) {
       this._store.ready = true;
       this._tray.setContextMenu(this._contextMenu);
+      this._app.dock.hide();
     } else {
       this._updateTray();
     }
