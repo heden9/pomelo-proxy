@@ -6,12 +6,11 @@ import { EMode } from "./type";
 // const debug = require("debug")("pomelo-client:main-menu");
 
 export class MainMenu extends SDKBase {
-  private _label: string = "pomelo-proxy";
+  private _label: string = "pomelo";
   private _store: UserDefaultStore;
 
   private get _menu(): MenuItemConstructorOptions[] {
-    const on = this._store.on;
-    const mode = this._store.mode;
+    const { on, mode } = this._store;
     return [
       {
         enabled: false,

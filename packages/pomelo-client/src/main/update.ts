@@ -86,6 +86,7 @@ export class UpdateManager extends BaseManager<IUpdateManagerOptions> {
   }
 
   public async fetchComponent(data: IUpdateCacheMapData) {
+    this.emit("download-begin");
     const latestUrl = data.raw.browser_download_url;
     const userDataPath = this._store.userDataPath;
     const basename = path.basename(latestUrl);
@@ -96,6 +97,7 @@ export class UpdateManager extends BaseManager<IUpdateManagerOptions> {
     }
     const ssLocalScriptInfo = this._store.ssLocalScriptInfo;
     await this._unzip(setupPath, ssLocalScriptInfo.path);
+    this.emit("download-done");
   }
 
   /**

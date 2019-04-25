@@ -1,6 +1,5 @@
 import { app, BrowserWindow, Tray } from "electron";
 import unhandled from "electron-unhandled";
-import * as os from "os";
 import * as path from "path";
 import { createLoggers, createPrefixLogger } from "pomelo-util";
 import { BaseManager, TBaseManagerClass } from "./base-manager";
@@ -31,11 +30,11 @@ const $LOGGER = Symbol("main#logger");
 // }
 let win: any;
 function sendStatusToWindow(text: string) {
+  console.log(text);
   win.webContents.send("message", text);
 }
 function createDefaultWindow() {
   win = new BrowserWindow();
-  win.webContents.openDevTools();
   win.on("closed", () => {
     win = null;
   });
@@ -49,7 +48,6 @@ class Main {
     if (!this[$LOGGERS]) {
       this[$LOGGERS] = createLoggers();
     }
-    // return createSingleton(this, 'main#loggers', )
     return this[$LOGGERS];
   }
 
@@ -86,22 +84,30 @@ class Main {
   private _awaitUpdate: Promise<any> | null = null;
   private [$MENU]: MainMenu;
   private [$TRAY]: Tray;
-  // private [$NOTIFICATION]: Notification;
   private [$LOGGERS]: ReturnType<typeof createLoggers>;
   private [$LOGGER]: ReturnType<typeof createPrefixLogger>;
   constructor() {
     this._store = new UserDefaultStore();
     this._updateManager = this._createManager(UpdateManager, {
       appVersion: this._app.getVersion(),
-      platform: os.platform(),
+      platform: process.platform,
     });
     this._localManager = this._createManager(LocalManager);
     this._pacManager = this._createManager(PacManager);
   }
 
   public start() {
+    // app只会启动一个
+    const gotTheLock = this._app.requestSingleInstanceLock();
+    if (!gotTheLock) {
+      this._app.quit();
+      return;
+    }
     this._app.once("ready", this._onReady);
     this._app.once("before-quit", this._onClose);
+    this._app.on("window-all-closed", () => {
+      this._app.quit();
+    });
   }
 
   public close = () => {
@@ -164,22 +170,30 @@ class Main {
     await this._closeProxy();
   }
 
-  private _onReady = () => {
+  private _onReady = async () => {
     unhandled({
       logger: (ex) => this.logger.error(ex),
     });
+    await ProxyHelper.disableAll();
     this._menu.on("on", this._onMenuON);
     this._menu.on("off", this._onMenuOFF);
     this._menu.on("mode", this._onMenuSwitchMode);
-    this._tray.setContextMenu(this._contextMenu);
-    createDefaultWindow();
+    this._updateManager.once("download-begin", () => {
+      createDefaultWindow();
+    });
+    this._updateManager.once("download-done", () => {
+      win.setProgressBar(-1);
+      win.close();
+    });
     this._updateManager.on("download-progress", (progressObj) => {
       let log_message = "Download speed: " + (progressObj.bytesPerSecond / 1024).toFixed(2) + " k/s";
       log_message = log_message + " - Downloaded " + (progressObj.percent * 100).toFixed(2) + "%";
       log_message = log_message + " (" + progressObj.transferred + "/" + progressObj.total + ")";
       sendStatusToWindow(log_message);
+      win.setProgressBar(progressObj.percent);
     });
     // TODO: close Window after downloaded
+    // prevent
     this._awaitUpdate = this._updateManager.checkComponent();
   }
 
@@ -187,7 +201,13 @@ class Main {
     await this._awaitUpdate;
     this._localManager.instance();
     await this._setupProxy();
-    this._updateTray();
+
+    if (!this._store.ready) {
+      this._store.ready = true;
+      this._tray.setContextMenu(this._contextMenu);
+    } else {
+      this._updateTray();
+    }
   }
 
   private _onMenuOFF = async () => {

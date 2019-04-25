@@ -1,8 +1,7 @@
 import { exec } from "child_process";
-import * as os from "os";
 import { promisify } from "util";
 
-const platform = os.platform();
+const platform = process.platform;
 const promisifyExec = promisify(exec);
 
 // TODO: sys select
