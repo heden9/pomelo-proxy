@@ -10,8 +10,7 @@
     "lint": "tslint ./src/* --fix",
     "cov": "echo \"skip\"",
     "compile": "electron-webpack",
-    "gen": "webpack",
-    "dist": "cross-env NODE_ENV=production yarn gen && yarn compile && electron-builder",
+    "dist": "cross-env NODE_ENV=production yarn compile && electron-builder",
     "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null"
   },
   "dependencies": {
@@ -21,6 +20,7 @@
     "genpac": "^1.3.0",
     "sdk-base": "^3.5.1",
     "semver": "^6.0.0",
+    "pomelo": "^0.0.2",
     "source-map-support": "^0.5.10"
   },
   "build": {
@@ -36,8 +36,6 @@
     "electron-builder": "20.38.4",
     "electron-webpack": "^2.6.2",
     "electron-webpack-ts": "^3.1.1",
-    "graceful-process": "^1.2.0",
-    "pomelo": "^0.0.2",
     "pomelo-util": "^0.0.2",
     "tslint": "^5.15.0",
     "typescript": "^3.4.2",

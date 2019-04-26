@@ -1,5 +1,4 @@
 import { ChildProcess } from "child_process";
-import { ISSLocalOptions } from "pomelo";
 import { terminate } from "pomelo-util";
 import { BaseManager } from "./base-manager";
 import { IBaseOptions } from "./type";
@@ -37,13 +36,15 @@ export class LocalManager extends BaseManager<IBaseOptions> {
     //   serverPort: 9000,
     // };
     // FIXME: dont commit
-    const options: ISSLocalOptions = {
+    const options = {
       algorithm: "aes-256-cfb",
       host: this._store.localSocksHost,
       password: "E8c7Nt",
       port: this._store.localSocksPort,
       serverHost: "45.77.20.146",
       serverPort: 1025,
+
+      pomelo: this._store.pomeloPath,
     };
     const scriptPath = this._scriptPath;
     this.logger.info("Run fork %s %s %j", process.execPath, scriptPath, options);
@@ -73,12 +74,6 @@ export class LocalManager extends BaseManager<IBaseOptions> {
     if (proc.stderr) {
       proc.stderr.on("data", (text) => {
         this.logger.error(text.toString());
-      });
-    }
-
-    if (proc.stdout) {
-      proc.stdout.on("data", (text) => {
-        this.logger.warn(text.toString());
       });
     }
 

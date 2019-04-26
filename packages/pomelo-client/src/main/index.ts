@@ -1,6 +1,5 @@
 import { app, Tray } from "electron";
 import unhandled from "electron-unhandled";
-// import * as path from "path";
 import { createLoggers, createPrefixLogger } from "pomelo-util";
 import { BaseManager, TBaseManagerClass } from "./base-manager";
 import { LocalManager } from "./local";

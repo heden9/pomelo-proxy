@@ -1,7 +1,4 @@
-import appConfigFn from "application-config";
-import * as path from "path";
 
-const appConfig = appConfigFn("pomelo");
 
 function isProduction() {
   if (!process.versions.electron) {
@@ -20,13 +17,8 @@ function isProduction() {
   return false;
 }
 
-function getConfigPath() {
-  return path.dirname(appConfig.filePath);
-}
-
 const IS_PRODUCTION = isProduction();
 
 export default {
-  CONFIG_PATH: getConfigPath(),
   IS_PRODUCTION,
 };

@@ -1,5 +1,6 @@
 import { app, systemPreferences } from "electron";
 import * as path from "path";
+import appConfig from "../config";
 import { EMode } from "./type";
 
 export enum EUserDefault {
@@ -44,11 +45,15 @@ export class UserDefaultStore {
 
   public get ssLocalScriptInfo() {
     const version = this.get(EUserDefault.SS_LOCAL_SCRIPT_VERSION, "string");
-    const scriptPath = path.join(__static, `start-local`);
+    const scriptPath = path.join(__static, `start-local.js`);
     return {
       path: scriptPath,
       version,
     };
+  }
+
+  public get pomeloPath() {
+    return path.join(appConfig.IS_PRODUCTION ? __dirname : process.cwd(), "/node_modules/pomelo");
   }
 
   public get on() {
