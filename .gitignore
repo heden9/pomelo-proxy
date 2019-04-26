@@ -13,3 +13,4 @@ dist
 pomelo-cli
 yarn.lock
 yarn-error.log
+report.html

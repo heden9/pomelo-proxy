@@ -4,10 +4,8 @@ node_js:
   - 10
   - 9
   - 8
-install:
-  - npm i -g cnpm
-  - cnpm i
+cache: yarn
 script:
-  - npm run cov
+  - yarn run cov
 after_success:
   - bash <(curl -s https://codecov.io/bash)
