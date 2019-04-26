@@ -1,7 +1,8 @@
 import { ISSLocalOptions } from "pomelo";
-import { forkNode, terminate } from "pomelo-util";
+import { terminate } from "pomelo-util";
 import { BaseManager } from "./base-manager";
 import { IBaseOptions } from "./type";
+import { forkNode } from "./util";
 
 
 /**
@@ -45,6 +46,18 @@ export class LocalManager extends BaseManager<IBaseOptions> {
         scriptPath,
         [JSON.stringify(options)],
       );
+
+      if (LocalManager.__cache.proc.stderr) {
+        LocalManager.__cache.proc.stderr.on("data", (text) => {
+          this.logger.error(text.toString());
+        });
+      }
+
+      if (LocalManager.__cache.proc.stdout) {
+        LocalManager.__cache.proc.stdout.on("data", (text) => {
+          this.logger.warn(text.toString());
+        });
+      }
       // TODO: 熔断
 
       LocalManager.__cache.proc.once("error", (ex) => {
@@ -55,6 +68,7 @@ export class LocalManager extends BaseManager<IBaseOptions> {
 
       LocalManager.__cache.catch((ex) => {
         this.logger.error(ex);
+      }).then(() => {
         this.logger.warn("process:%s exit", (LocalManager.__cache as any).proc.pid);
         LocalManager.__cache = null;
         if (count > COUNT_LIMIT) {

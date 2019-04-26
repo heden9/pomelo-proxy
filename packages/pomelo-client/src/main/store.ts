@@ -1,5 +1,6 @@
 import { app, systemPreferences } from "electron";
 import * as path from "path";
+import config from "../config";
 import { EMode } from "./type";
 
 export enum EUserDefault {
@@ -46,7 +47,7 @@ export class UserDefaultStore {
     const version = this.get(EUserDefault.SS_LOCAL_SCRIPT_VERSION, "string");
     const scriptPath = path.join(this.userDataPath, `start-local-${version}`);
     return {
-      path: scriptPath,
+      path: config.IS_PRODUCTION ? scriptPath : path.join(process.cwd(), "dist", `start-local-${version}`),
       version,
     };
   }

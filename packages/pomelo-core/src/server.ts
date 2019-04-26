@@ -64,12 +64,12 @@ export class SocksServer extends SocksBase implements ISocksServer {
       closeTasks.push(connection.close());
     }
     await Promise.all(closeTasks);
-    // close logger
-    super.close();
     this.emit("close");
     this.removeAllListeners();
     debug("close finished");
     this.logger.info("server %o is exit", this._publishPort);
+    // close logger
+    super.close();
   }
 
   public async start() {

@@ -10,7 +10,8 @@
     "lint": "tslint ./src/* --fix",
     "cov": "echo \"skip\"",
     "compile": "electron-webpack",
-    "dist": "yarn compile && electron-builder",
+    "gen": "pkg ./src/main/start-local -o ./dist/start-local-0.0.1",
+    "dist": "yarn compile && electron-builder && yarn gen",
     "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null"
   },
   "dependencies": {

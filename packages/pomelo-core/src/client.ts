@@ -214,10 +214,10 @@ export class SocksClient extends SocksBase implements ISocksClient {
     if (!force) {
       await this.await(this._socket, "close");
     }
-    // close logger
-    super.close();
     this.emit("close");
     this.removeAllListeners();
+    // close logger
+    super.close();
   }
 
   private _removeInternalHandlers() {
