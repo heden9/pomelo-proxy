@@ -55,6 +55,7 @@ export class MainMenu extends SDKBase {
       {
         label: "退出",
         role: "quit",
+        accelerator: "CmdOrCtrl+Q",
       },
     ];
   }

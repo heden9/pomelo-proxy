@@ -23,7 +23,7 @@ export class LocalManager extends BaseManager<IBaseOptions> {
   // tslint:disable-next-line:variable-name
   private static proc: ReturnType<typeof forkNode> | null;
   private static retryCount = 0;
-  private static retryLimit = 2;
+  private static retryLimit = 0;
   public async instance() {
     if (LocalManager.proc) {
       throw new Error(`already has on ss-local process(${LocalManager.proc.pid})`);
@@ -83,12 +83,13 @@ export class LocalManager extends BaseManager<IBaseOptions> {
     }
 
     proc.once("exit", async () => {
+      LocalManager.proc = null;
       this.logger.warn("process:%s exit", proc.pid);
       if (LocalManager.retryCount > LocalManager.retryLimit) {
         return;
       }
-      const subProc = await this.instance();
       LocalManager.retryCount ++;
+      const subProc = await this.instance();
       this.logger.info("reload:%s", subProc.pid);
     });
   }
