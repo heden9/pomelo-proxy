@@ -1,6 +1,6 @@
-import { app, BrowserWindow, Tray } from "electron";
+import { app, Tray } from "electron";
 import unhandled from "electron-unhandled";
-import * as path from "path";
+// import * as path from "path";
 import { createLoggers, createPrefixLogger } from "pomelo-util";
 import { BaseManager, TBaseManagerClass } from "./base-manager";
 import { LocalManager } from "./local";
@@ -9,9 +9,8 @@ import { PacManager } from "./pac";
 import { ProxyHelper } from "./proxy-helper";
 import { UserDefaultStore } from "./store";
 import { EMode, IBaseOptions } from "./type";
-import { UpdateManager } from "./update";
+// import { UpdateManager } from "./update";
 
-const debug = require("debug")("pomelo-client");
 // TODO:
 // - 1.PAC mode
 // - 2.auto set
@@ -28,19 +27,19 @@ const $LOGGER = Symbol("main#logger");
 //   }
 //   return scope[obj.__symbol];
 // }
-let win: any;
-function sendStatusToWindow(text: string) {
-  console.log(text);
-  win.webContents.send("message", text);
-}
-function createDefaultWindow() {
-  win = new BrowserWindow();
-  win.on("closed", () => {
-    win = null;
-  });
-  win.loadURL(`file://${path.join(__static, "index.html")}#v${app.getVersion()}`);
-  return win;
-}
+// let win: any;
+// function sendStatusToWindow(text: string) {
+//   console.log(text);
+//   win.webContents.send("message", text);
+// }
+// function createDefaultWindow() {
+//   win = new BrowserWindow();
+//   win.on("closed", () => {
+//     win = null;
+//   });
+//   win.loadURL(`file://${path.join(__static, "index.html")}#v${app.getVersion()}`);
+//   return win;
+// }
 
 class Main {
   // TODO: refactor createGetters
@@ -78,7 +77,7 @@ class Main {
 
   private _pacManager: PacManager;
   private _localManager: LocalManager;
-  private _updateManager: UpdateManager;
+  // private _updateManager: UpdateManager;
   private _app = app;
   private readonly _store: UserDefaultStore;
   private _awaitUpdate: Promise<any> | null = null;
@@ -88,10 +87,10 @@ class Main {
   private [$LOGGER]: ReturnType<typeof createPrefixLogger>;
   constructor() {
     this._store = new UserDefaultStore();
-    this._updateManager = this._createManager(UpdateManager, {
-      appVersion: this._app.getVersion(),
-      platform: process.platform,
-    });
+    // this._updateManager = this._createManager(UpdateManager, {
+    //   appVersion: this._app.getVersion(),
+    //   platform: process.platform,
+    // });
     this._localManager = this._createManager(LocalManager);
     this._pacManager = this._createManager(PacManager);
   }
@@ -149,7 +148,6 @@ class Main {
   }
 
   private async _setupProxy() {
-    debug("setupProxy", this._store.mode);
     switch (this._store.mode) {
       case EMode.PAC:
         await this._setupPacProxy();
@@ -166,7 +164,6 @@ class Main {
   }
 
   private _onClose = async () => {
-    debug("close");
     await this._closeProxy();
   }
 
@@ -178,37 +175,37 @@ class Main {
     this._menu.on("on", this._onMenuON);
     this._menu.on("off", this._onMenuOFF);
     this._menu.on("mode", this._onMenuSwitchMode);
-    this._updateManager.once("download-begin", () => {
-      createDefaultWindow();
-    });
-    this._updateManager.once("download-done", () => {
-      win.setProgressBar(-1);
-      win.close();
-    });
-    this._updateManager.on("download-progress", (progressObj) => {
-      let log_message = "Download speed: " + (progressObj.bytesPerSecond / 1024).toFixed(2) + " k/s";
-      log_message = log_message + " - Downloaded " + (progressObj.percent * 100).toFixed(2) + "%";
-      log_message = log_message + " (" + progressObj.transferred + "/" + progressObj.total + ")";
-      sendStatusToWindow(log_message);
-      win.setProgressBar(progressObj.percent);
-    });
-    // TODO: close Window after downloaded
-    // prevent
-    this._awaitUpdate = this._updateManager.checkComponent();
+
+    // this._updateManager.once("download-begin", () => {
+    //   createDefaultWindow();
+    // });
+    // this._updateManager.once("download-done", () => {
+    //   win.setProgressBar(-1);
+    //   win.close();
+    // });
+    // this._updateManager.on("download-progress", (progressObj) => {
+    //   let log_message = "Download speed: " + (progressObj.bytesPerSecond / 1024).toFixed(2) + " k/s";
+    //   log_message = log_message + " - Downloaded " + (progressObj.percent * 100).toFixed(2) + "%";
+    //   log_message = log_message + " (" + progressObj.transferred + "/" + progressObj.total + ")";
+    //   sendStatusToWindow(log_message);
+    //   win.setProgressBar(progressObj.percent);
+    // });
+    // // TODO: close Window after downloaded
+    // // prevent
+    // this._awaitUpdate = this._updateManager.checkComponent();
   }
 
   private _onMenuON = async () => {
     await this._awaitUpdate;
-    this._localManager.instance();
+    await this._localManager.instance();
     await this._setupProxy();
 
     if (!this._store.ready) {
       this._store.ready = true;
       this._tray.setContextMenu(this._contextMenu);
       this._app.dock.hide();
-    } else {
-      this._updateTray();
     }
+    this._updateTray();
   }
 
   private _onMenuOFF = async () => {

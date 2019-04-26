@@ -6,7 +6,6 @@ import { BaseManager } from "./base-manager";
 import { UserDefaultStore } from "./store";
 import { IBaseOptions } from "./type";
 
-const debug = require("debug")("pomelo-client");
 
 export class PacManager extends BaseManager<IBaseOptions> {
   protected get _loggerPrefix() {
@@ -37,7 +36,6 @@ export class PacManager extends BaseManager<IBaseOptions> {
     // TODO: refactor genPAC
     await this._generatePAC();
     this._server = http.createServer((req, res) => {
-      debug("on connect", this._pacPath);
       if (fs.existsSync(this._pacPath)) {
         fs.createReadStream(this._pacPath).pipe(res);
       } else {
