@@ -101,6 +101,9 @@ class Main {
       this._app.quit();
       return;
     }
+    unhandled({
+      logger: (ex) => this.logger.error(ex),
+    });
     this._app.once("ready", this._onReady);
     this._app.once("before-quit", this._onClose);
     this._app.on("window-all-closed", () => {
@@ -167,9 +170,6 @@ class Main {
   }
 
   private _onReady = async () => {
-    unhandled({
-      logger: (ex) => this.logger.error(ex),
-    });
     await ProxyHelper.disableAll();
     this._menu.on("on", this._onMenuON);
     this._menu.on("off", this._onMenuOFF);

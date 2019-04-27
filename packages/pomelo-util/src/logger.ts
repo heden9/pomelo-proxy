@@ -9,7 +9,7 @@ export interface ILoggerLike {
 }
 
 export type TLoggerMethod = keyof ILoggerLike;
-
+type TExtraFn = (method: TLoggerMethod, args: any[]) => void;
 export class PrefixLogger {
   public static config: EggLoggersOptions = {
     appLogName: `pomelo-web.log`,
@@ -25,25 +25,13 @@ export class PrefixLogger {
     errorLogName: "common-error.log",
   };
 
-  public static createLoggers(options: Partial<EggLoggersOptions> = {}) {
-    if (process.env.NODE_ENV === "unittest") {
-      options.level = "WARN";
-      options.consoleLevel = "WARN";
-    }
-    const loggers = new EggLoggers({
-      logger: {
-        ...PrefixLogger.config,
-        ...options,
-      },
-    } as any);
-    return loggers;
-  }
-
   protected _logger: ILoggerLike;
   protected _prefix: string;
-  constructor(logger: ILoggerLike, prefix: string) {
+  protected _extraFn?: TExtraFn;
+  constructor(logger: ILoggerLike, prefix: string, extraFn?: TExtraFn) {
     this._logger = logger;
     this._prefix = prefix;
+    this._extraFn = extraFn;
   }
 
   public debug(...args: any[]) {
@@ -66,6 +54,10 @@ export class PrefixLogger {
     // add `[${pathName}]` in log
     if (this._prefix && typeof args[0] === "string") {
       args[0] = `${this._prefix} ${args[0]}`;
+    }
+
+    if (this._extraFn) {
+      this._extraFn(method, args);
     }
     this._logger[method](...args);
   }
