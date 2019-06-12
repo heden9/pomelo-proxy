@@ -162,8 +162,11 @@ export class Encrypt implements IEncrypt {
           decipheriv.pipe(...args);
         }
         // reset
-        (transform as any).__proto__.pipe = fnPipe;
-        (transform as any).__proto__.unpipe = fnUnpipe;
+        (transform as any).pipe = fnPipe;
+        (transform as any).unpipe = (...args: any[]) => {
+          decipheriv.unpipe(...args);
+          return transform;
+        };
         callback(null, chunk.slice(self._ivLen));
       },
     });
@@ -181,9 +184,12 @@ export class Encrypt implements IEncrypt {
         const [destination] = pipes[index];
         if (destination === args[0]) {
           pipes.splice(index, 1);
+
+
           break;
         }
       }
+
       return transform;
     };
     return transform;
