@@ -162,7 +162,10 @@ export class Encrypt implements IEncrypt {
           decipheriv.pipe(...args);
         }
         // reset
-        (transform as any).pipe = fnPipe;
+        (transform as any).pipe = (des: any, option: any) => {
+          decipheriv.pipe(des, option);
+          return des;
+        };
         (transform as any).unpipe = (...args: any[]) => {
           decipheriv.unpipe(...args);
           return transform;
